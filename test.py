@@ -8,7 +8,6 @@ from appium import webdriver
 capabilities = dict(
     platformName='ios',
     automationName='xcuitest',
-    # https://guides.codepath.com/ios/Provisioning-Profiles
     # xcodebuild --help
     updatedWDABundleId='it.uniupo.dsdf.WebDriverAgentRunner',
     allowProvisioningDeviceRegistration=True,
