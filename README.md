@@ -65,3 +65,8 @@ In this way you can trust developer without any time problems.
 
 ## Windows/Linux
 
+
+
+## Appium Inspector
+
+[Here](https://github.com/appium/appium-inspector/releases/tag/v2023.3.1) you can find the latest version.
