@@ -13,6 +13,7 @@ capabilities = dict(
     allowProvisioningDeviceRegistration=True,
     showXcodeLog=True,
     browserName='safari',
+    wdaLaunchTimeout=60 * 1000 * 3,  # 3 minutes
 )
 
 appium_server_url = 'http://localhost:4723'

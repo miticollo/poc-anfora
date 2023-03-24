@@ -63,7 +63,15 @@ In this way you can trust developer without any time problems.
 - iPad mini 2: iOS 12.5.6
 - iPad mini 2: iOS 12.5.7
 
-## Windows/Linux
+## Other OSes
+
+
+
+### Linux
+
+
+
+### Windows
 
 
 
