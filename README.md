@@ -147,35 +147,36 @@ These commands will be run inside container, so they are independently of host O
    - it automatically retrieves, compiles and installs a specific Python version and
    - you can choose a specific version per project.
 
-   1. [Install `pyenv`](https://github.com/pyenv/pyenv#homebrew-in-macos)
-      and [set up the build environment](https://github.com/pyenv/pyenv/wiki#suggested-build-environment)
-      ```shell
-      brew -v update
-      brew -v install pyenv openssl readline sqlite3 xz zlib tcl-tk
-      ```
-   2. [Add autocompletion and shims](https://github.com/pyenv/pyenv#advanced-configuration) to your shell environment
-      ```shell
-      eval "$(pyenv init -)"
-      ```
-   3. Restart shell.
-   4. Install the current latest Python 3 version, in my case 3.11.2
-      ```shell
-      pyenv install 3.11
-      pyenv global 3.11
-      ```
-      To list all supported Python version you can run: `pyenv install -l`.
-      This list can be updated every time that a `pyenv` update is available.
+      1. [Install `pyenv`](https://github.com/pyenv/pyenv#homebrew-in-macos)
+         and [set up the build environment](https://github.com/pyenv/pyenv/wiki#suggested-build-environment)
+         ```shell
+         brew -v update
+         brew -v install pyenv openssl readline sqlite3 xz zlib tcl-tk
+         ```
+      2. [Add autocompletion and shims](https://github.com/pyenv/pyenv#advanced-configuration) to your shell environment
+         ```shell
+         eval "$(pyenv init -)"
+         ```
+      3. Restart shell.
+      4. Install the current latest Python 3 version, in my case 3.11.2
+         ```shell
+         pyenv install 3.11
+         pyenv global 3.11
+         ```
+         To list all supported Python version you can run: `pyenv install -l`.
+         This list can be updated every time that a `pyenv` update is available.
+
 11. We have almost done!
     We haven't yet install `npm` used by frida and Appium indeed `appium` server and its drivers are NodeJS programs.
     To install and manage it we will use a CLI tool called `nvm` which is a manager like `pyenv`.
-   1. Install it with this [bash command](https://github.com/nvm-sh/nvm#install--update-script).
-   2. [Verify installation](https://github.com/nvm-sh/nvm#verify-installation)
-      ```shell
-      command -v nvm
-      ```
-   3. Install the latest NodeJS and `npm` version:
-      ```shell
-       nvm install --latest-npm
+      1. Install it with this [bash command](https://github.com/nvm-sh/nvm#install--update-script).
+      2. [Verify installation](https://github.com/nvm-sh/nvm#verify-installation)
+         ```shell
+         command -v nvm
+         ```
+      3. Install the latest NodeJS and `npm` version:
+         ```shell
+          nvm install --latest-npm
       ```
 12. [Install `usbfluxd` to replace `usbmuxd` socket file](https://github.com/sickcodes/Docker-OSX#connect-to-a-host-running-usbfluxd)
     to connect iPhone from host to container over network.
