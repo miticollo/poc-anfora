@@ -182,8 +182,10 @@ These commands will be run inside container, so they are independently of host O
 14. [Install `usbfluxd` to replace `usbmuxd` socket file](https://github.com/sickcodes/Docker-OSX#connect-to-a-host-running-usbfluxd) to connect iPhone from host to container over network.
 15. Enable [parallel building](https://theos.dev/docs/parallel-building)
     ```shell
+    echo '' >> ~/.zprofile
     echo PATH=\"$(brew --prefix make)/libexec/gnubin:\$PATH\" >> ~/.zprofile
     ```
+    then restart shell.
 16. Done! Go to [previously section](#how-to-run).
 
 #### Capability: `wdaLaunchTimeout`
