@@ -56,10 +56,10 @@ if __name__ == '__main__':
         print_usage()
         sys.exit(1)
 
-    capabilities = {
+    capabilities.update({
         'xcodeOrgId': sys.argv[1],
         'udid': sys.argv[2]
-    }
+    })
 
     if len(sys.argv) == 4:
         timeout = validate_timeout_arg(sys.argv[3])
