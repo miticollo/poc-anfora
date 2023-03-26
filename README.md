@@ -179,6 +179,10 @@ These commands will be run inside container, so they are independently of host O
          ```shell
           nvm install --latest-npm
          ```
+      4. To set the latest version of NodeJS as the default one:
+         ```shell
+         nvm alias default node
+         ```
 14. [Install `usbfluxd` to replace `usbmuxd` socket file](https://github.com/sickcodes/Docker-OSX#connect-to-a-host-running-usbfluxd) to connect iPhone from host to container over network.
 15. Enable [parallel building](https://theos.dev/docs/parallel-building)
     ```shell
