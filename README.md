@@ -104,7 +104,7 @@ So here I link the main steps with some my additions:
    ```
    In this way any incoming connections will be forked into a new process (`fork` option), so that multiple clients can connect simultaneously. 
    The `-` at the end specifies that data from the connection should be written to the standard output.
-   We will use it as clipboard if necessary.
+   We will use it as shared clipboard between host and guest if necessary.
 5. If you shut down the container you can restart it
    following [these instructions](https://github.com/sickcodes/Docker-OSX#start-the-same-container-later-persistent-disk).
 
