@@ -19,6 +19,23 @@ capabilities = dict(
 appium_server_url = 'http://localhost:4723'
 
 
+def print_usage():
+    script_name = os.path.basename(__file__)
+    print(f"Usage: {script_name} <TEAM_ID> <UDID> [<TIMEOUT>] [<BUNDLE_ID>]", file=sys.stderr)
+
+
+def validate_timeout_arg(arg):
+    try:
+        minutes = int(arg)
+        if minutes <= 0:
+            print("<TIMEOUT> must be a positive integer!", file=sys.stderr)
+            return None
+        return 60 * 1000 * minutes
+    except ValueError:
+        print("<TIMEOUT> must be an integer!", file=sys.stderr)
+        return None
+
+
 class TestAppium(unittest.TestCase):
     def setUp(self) -> None:
         self.driver = webdriver.Remote(appium_server_url, capabilities)
@@ -35,20 +52,24 @@ class TestAppium(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2 or len(sys.argv) > 4:
-        # https://stackoverflow.com/a/4152986
-        print("Usage: " + os.path.basename(__file__) + " <TEAM_ID> <UDID> [<TIMEOUT>] [<BUNDLE_ID>]", file=sys.stderr)
+    if len(sys.argv) < 3 or len(sys.argv) > 5:
+        print_usage()
         sys.exit(1)
 
-    capabilities['xcodeOrgId'] = sys.argv[1]
-    capabilities['udid'] = sys.argv[2]
-    if len(sys.argv) == 3 or len(sys.argv) == 4:
-        minutes = int(sys.argv[3])
-        if minutes <= 0:
-            print("<TIMEOUT> must be a positive integer!", file=sys.stderr)
-        capabilities['wdaLaunchTimeout'] = 60 * 1000 * minutes
-    if len(sys.argv) == 5:
-        capabilities['updatedWDABundleId'] = str(sys.argv[4])
+    capabilities = {
+        'xcodeOrgId': sys.argv[1],
+        'udid': sys.argv[2]
+    }
+
+    if len(sys.argv) == 4:
+        timeout = validate_timeout_arg(sys.argv[3])
+        if timeout:
+            capabilities['wdaLaunchTimeout'] = timeout
+    elif len(sys.argv) == 5:
+        timeout = validate_timeout_arg(sys.argv[3])
+        if timeout:
+            capabilities['wdaLaunchTimeout'] = timeout
+            capabilities['updatedWDABundleId'] = sys.argv[4]
 
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAppium)
     unittest.TextTestRunner(verbosity=2).run(suite)
