@@ -35,18 +35,20 @@ class TestAppium(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2 or len(sys.argv) > 3:
+    if len(sys.argv) < 2 or len(sys.argv) > 4:
         # https://stackoverflow.com/a/4152986
-        print("Usage: " + os.path.basename(__file__) + " <TEAM_ID> <UDID> [<TIMEOUT>]", file=sys.stderr)
+        print("Usage: " + os.path.basename(__file__) + " <TEAM_ID> <UDID> [<TIMEOUT>] [<BUNDLE_ID>]", file=sys.stderr)
         sys.exit(1)
 
     capabilities['xcodeOrgId'] = sys.argv[1]
     capabilities['udid'] = sys.argv[2]
-    if len(sys.argv) == 4:
+    if len(sys.argv) == 3 or len(sys.argv) == 4:
         minutes = int(sys.argv[3])
         if minutes <= 0:
             print("<TIMEOUT> must be a positive integer!", file=sys.stderr)
         capabilities['wdaLaunchTimeout'] = 60 * 1000 * minutes
+    if len(sys.argv) == 5:
+        capabilities['updatedWDABundleId'] = str(sys.argv[4])
 
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAppium)
     unittest.TextTestRunner(verbosity=2).run(suite)
