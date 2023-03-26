@@ -48,7 +48,7 @@ When you have finished and your macOS container is ready you can follow these st
 6. Run Appium server with increased log level
    <span><!-- https://stackoverflow.com/a/45164863 --></span>
    ```shell
-   npx appium server --log-level 'debug:info' --log-timestamp --local-timezone
+   npx appium server --log-level 'debug:error' --log-timestamp --local-timezone
    ```
 7. <span id="team-id"></span>
    In another terminal window, execute Python script
