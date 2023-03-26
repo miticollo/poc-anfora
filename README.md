@@ -179,7 +179,7 @@ These commands will be run inside container, so they are independently of host O
          ```shell
           nvm install --latest-npm
          ```
-      4. To set the latest version of NodeJS as the default one:
+      4. To set [the latest version of NodeJS as the default one](https://github.com/nvm-sh/nvm#set-default-node-version):
          ```shell
          nvm alias default node
          ```
