@@ -35,7 +35,7 @@ class TestAppium(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 3 or len(sys.argv) > 4:
+    if len(sys.argv) < 2 or len(sys.argv) > 3:
         # https://stackoverflow.com/a/4152986
         print("Usage: " + os.path.basename(__file__) + " <TEAM_ID> <UDID> [<TIMEOUT>]", file=sys.stderr)
         sys.exit(1)

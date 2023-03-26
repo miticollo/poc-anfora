@@ -50,15 +50,19 @@ When you have finished and your macOS container is ready you can follow these st
    ```shell
    npx appium server --log-level 'debug:info' --log-timestamp --local-timezone
    ```
-7. In another terminal window, execute Python script
+7. <span id="team-id"></span>
+   In another terminal window, execute Python script
    <span><!-- https://appium.github.io/appium/docs/en/2.0/quickstart/test-py/ --></span>
    <span><!-- python ./test.py 'HS5TZXKJZJ' $(idevice_id -l) --></span>
    ```shell
    python ./test.py <TEAM_ID> <UDID> [<TIMEOUT>]
    ```
-   To find `<UDID>` you can
-   use [`idevice_id -l`](https://github.com/libimobiledevice/libimobiledevice/blob/master/tools/idevice_id.c).
-   To set `<TEAM_ID>` you can use `devteamid.sh`.
+   To find `<UDID>`, you can use [`idevice_id -l`](https://github.com/libimobiledevice/libimobiledevice/blob/master/tools/idevice_id.c).
+   To set `<TEAM_ID>`, you need to create a blank project with Xcode and then run `devteamid.sh`. 
+   This will allow Xcode to download your certificate and save it in Keychain. 
+   The certificate contains your `<TEAM_ID>`.
+   If you have multiple accounts, use the `<TEAM_ID>` that you used to create the previous Xcode project. 
+   This procedure can be simplified if you are enrolled in Apple Developer, as explained [here](https://developer.apple.com/help/account/manage-your-team/locate-your-team-id/).
 
 ## Tested Devices and iOS Versions
 
