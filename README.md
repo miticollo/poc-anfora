@@ -149,7 +149,12 @@ These commands will be run inside container, so they are independently of host O
          brew -v update
          brew -v install pyenv openssl readline sqlite3 xz zlib tcl-tk
          ```
-      2. [Add autocompletion and shims](https://github.com/pyenv/pyenv#advanced-configuration) to your shell environment
+      2. Show hidden files
+         ```shell
+         defaults write com.apple.Finder AppleShowAllFiles true
+         killall Finder
+         ```
+      3. [Add autocompletion and shims](https://github.com/pyenv/pyenv#advanced-configuration) to your shell environment
          ```shell
          pyenv init
          ```
