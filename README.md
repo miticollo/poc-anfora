@@ -138,6 +138,8 @@ These commands will be run inside container, so they are independently of host O
     Before moving it to `/Applications`, make sure to rename the `.app` folder to avoid conflicts with `Xcode.app`, which is the latest version. 
     Xcodes does all of this for you automatically.
     Furthermore, `aria2` uses up to 16 connections to download files, making it 3-5x faster than [URLSession](https://developer.apple.com/documentation/foundation/urlsession).
+
+    This step takes a long time, so in the meantime, you can continue with the next step.
 12. To install Python we will use [`pyenv`](https://github.com/pyenv/pyenv) a version manager with two important feature:
     - it automatically retrieves, compiles and installs a specific Python version and
     - you can choose a specific version per project.
