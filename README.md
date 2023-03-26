@@ -151,13 +151,13 @@ These commands will be run inside container, so they are independently of host O
          ```
       2. [Add autocompletion and shims](https://github.com/pyenv/pyenv#advanced-configuration) to your shell environment
          ```shell
-         eval "$(pyenv init -)"
+         pyenv init
          ```
-      3. Restart shell.
-      4. Install the current latest Python 3 version, in my case 3.11.2
+         and follow instructions.
+      3. Install the current latest Python 3 version, in my case 3.11.2
          ```shell
-         pyenv install 3.11
-         pyenv global 3.11
+         pyenv install -v 3.11.2
+         pyenv global 3.11.2
          ```
          To list all supported Python version you can run: `pyenv install -l`.
          This list can be updated every time that a `pyenv` update is available.
