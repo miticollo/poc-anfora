@@ -98,11 +98,13 @@ So here I link the main steps with some my additions:
 3. Choose an macOS release: I chose [Monterey](https://github.com/sickcodes/Docker-OSX#monterey-)
    To increase verbosity you can pass the **global option** `-l` with argument `debug` to `docker`.
 4. In another terminal window start a TCP listener on port 3000 using `socat`, a more versatile and powerful networking tool than `nc`
+   <span><!-- https://discord.com/channels/871502559842541679/871502643678281729/971015723805708359 --></span>
    ```shell
    socat TCP-LISTEN:3000,reuseaddr,fork -
    ```
    In this way any incoming connections will be forked into a new process (`fork` option), so that multiple clients can connect simultaneously. 
    The `-` at the end specifies that data from the connection should be written to the standard output.
+   We will use it as clipboard if necessary.
 5. If you shut down the container you can restart it
    following [these instructions](https://github.com/sickcodes/Docker-OSX#start-the-same-container-later-persistent-disk).
 
@@ -123,6 +125,7 @@ These commands will be run inside container, so they are independently of host O
 
    If you want you can also choose others optimizations.
 9. To connect to the previously started listener, open a terminal and run the command `nc 172.17.0.1 3000`.
+   <span><!-- https://discord.com/channels/871502559842541679/871502643678281729/971015886196604948 --></span>
 10. In another terminal window and run `git` to install Command Line Tools for Xcode.
     **This doesn't install Xcode.**
 11. To install Xcode we will use [Xcodes](https://github.com/RobotsAndPencils/XcodesApp) for two reasons:
