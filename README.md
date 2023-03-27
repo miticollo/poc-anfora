@@ -65,7 +65,7 @@ When you have finished and your macOS container is ready you can follow these st
 
    > **Warning**<br/>
    > If `appium` server fails with error: `Failed to register bundle identifier: The app identifier "it.uniupo.dsdf.WebDriverAgentRunner.xctrunner" cannot be registered to your development team because it is not available. Change your bundle identifier to a unique string to try again.`
-   > You can fix with the last positional argument of `test.py`: `[<BUNDLE_ID>]`.
+   > You can fix with the optional argument of `test.py` `[<BUNDLE_ID>]`.
 
 ## Tested Devices and iOS Versions
 
