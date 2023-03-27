@@ -58,10 +58,15 @@ When you have finished and your macOS container is ready you can follow these st
    python ./test.py <TEAM_ID> <UDID> [<TIMEOUT>] [<BUNDLE_ID>]
    ```
    To find `<UDID>`, you can use [`idevice_id -l`](https://github.com/libimobiledevice/libimobiledevice/blob/master/tools/idevice_id.c).
-   To set `<TEAM_ID>`, you must add the certificate for your Apple Developer account to your Mac. 
-   To do this, open Xcode and go to `Preferences...` > `Accounts`. 
-   Then run `devteamid.sh` and follow the instructions.
-   This procedure can be simplified if you are enrolled in Apple Developer, as explained [here](https://developer.apple.com/help/account/manage-your-team/locate-your-team-id/).
+   The procedure to retrieve your `<TEAM_ID>` depends on whether you are enrolled in the Apple Developer program or not. 
+   If you are enrolled in the program, you can follow [this guide](https://developer.apple.com/help/account/manage-your-team/locate-your-team-id/) to find your `<TEAM_ID>`. 
+   However, if you have a free account, you must create a blank project with Xcode and then run `devteamid.sh` with the Apple ID that you used to create the previous project.
+   When you create a new project, Xcode downloads a provisioning file and a certificate that contains the `Organizational Unit (OU)`, which contains your `<TEAM_ID>`.
+   You can find this certificate by exploring the Keychain app. Remember that `<TEAM_ID>` is unique and immutable, so save it for future uses.
+
+   > **Warning:**<br/>
+   > `xcodebuild` requires that the developer account used is in Xcode. 
+   > Therefore, you must add it by going to `Preferences...` > `Accounts`.
 
    > **Warning**<br/>
    > If `appium` server fails with error: `Failed to register bundle identifier: The app identifier "it.uniupo.dsdf.WebDriverAgentRunner.xctrunner" cannot be registered to your development team because it is not available. Change your bundle identifier to a unique string to try again.`
@@ -88,6 +93,9 @@ To automate this process, you would need to use Appium.
 Additionally, to skip the initial setup, you would need to use a pre-installed Docker image from [Docker Hub](https://hub.docker.com).
 Please note that this solution requires a significant amount of bandwidth to upload and download the required image (e.g., [Catalina](https://github.com/sickcodes/Docker-OSX#run-catalina-pre-installed-)).
 
+> **Notes**<br/>
+> Press `CTRL + G` if your mouse gets stuck.
+
 ### Linux
 
 I'll show what you must do on your host and on macOS separately.
@@ -97,13 +105,27 @@ I'll show what you must do on your host and on macOS separately.
 > **Note**<br/>
 > I used Manjaro as Linux Distro.
 
-The info for the project - that I linked before - are a lot.
-So here I link the main steps with some my additions:
+The information for the project that I linked before is extensive, so here are the main steps with some additions:
 
 1. Setup **Linux** to [pass through iPhone to container](https://github.com/sickcodes/Docker-OSX#usbfluxd-iphone-usb---network-style-passthrough-osx-kvm-docker-osx).
+   If you want to use an SSH session, you can install `sshpass` on your Linux machine using a package manager such as `yum`, `apt-get`, or `pacman`, depending on your distribution.
+   For example, in my case, I used the following command:
+   ```shell
+   yay -S sshpass
+   ```
+   Then, run the following command to establish an SSH connection:
+   ```shell
+   # adjust the values to match your environment
+   sshpass -p 'alpine' ssh -v user@localhost -p 50922
+   ```
+   > **Warning**<br/>
+   > <span><!-- https://github.com/sickcodes/Docker-OSX/issues/549#issuecomment-1298595576 --></span>
+   > You need to enable remote login in the virtual macOS first.
 2. [Initial setup](https://github.com/sickcodes/Docker-OSX#initial-setup)
 3. Choose an macOS release: I chose [Monterey](https://github.com/sickcodes/Docker-OSX#monterey-)
    To increase verbosity you can pass the **global option** `-l` with argument `debug` to `docker`.
+   Pass the option `--env-file env.list` to set two environment variables in the container: `XCODES_USERNAME` and `XCODES_PASSWORD`.
+   They will be used by `xcodes` to authenticate you and download Xcode.
 4. In another terminal window start a TCP listener on port 3000 using `socat`, a more versatile and powerful networking tool than `nc`
    <span><!-- https://discord.com/channels/871502559842541679/871502643678281729/971015723805708359 --></span>
    ```shell
@@ -135,19 +157,23 @@ These commands will be run inside container, so they are independently of host O
    <span><!-- https://discord.com/channels/871502559842541679/871502643678281729/971015886196604948 --></span>
 10. In another terminal window and run `git` to install Command Line Tools for Xcode.
     **This doesn't install Xcode.**
-11. To install Xcode we will use [Xcodes](https://github.com/RobotsAndPencils/XcodesApp) for two reasons:
+11. [Install HomeBrew](https://brew.sh/#install).
+12. To install Xcode, we will use a CLI tool called [`xcodes`](https://github.com/RobotsAndPencils/xcodes) for two reasons:
     - this app automatically manages two or more different versions of Xcode and
-    - another advantage is that Xcodes comes with [`aria2`](https://aria2.github.io/) a CLI tool to speed up the download of Xcode.
+    - another advantage is that `xcodes` can use [`aria2`](https://aria2.github.io/) a CLI tool to speed up the download of Xcode.
 
     Every version of Xcode comes with its own SDK version, which means that you need to install an old version of Xcode to use an old SDK version.
     For example, if you want to install the latest version of Xcode from the App Store and also need version 11.7 to compile your app for iOS 12+ and arm64e, you can download Xcode 11.7 from [here](https://developer.apple.com/services-account/download?path=/Developer_Tools/Xcode_11.7/Xcode_11.7.xip).
-    The file you download is a `.XIP` archive that you can extract using Archive Utility. 
+    The file you download is a [`.XIP` archive](https://github.com/saagarjha/unxip#design) that you can extract using Archive Utility. 
     Before moving it to `/Applications`, make sure to rename the `.app` folder to avoid conflicts with `Xcode.app`, which is the latest version. 
-    Xcodes does all of this for you automatically.
+    `xcodes` does all of this for you automatically.
     Furthermore, `aria2` uses up to 16 connections to download files, making it 3-5x faster than [URLSession](https://developer.apple.com/documentation/foundation/urlsession).
-
+    ```shell
+    brew -v install robotsandpencils/made/xcodes aria2
+    xcodes install --latest --experimental-unxip --empty-trash
+    ```
     This step takes a long time, so in the meantime, you can continue with the next step.
-12. To install Python we will use [`pyenv`](https://github.com/pyenv/pyenv) a version manager with two important feature:
+13. To install Python we will use [`pyenv`](https://github.com/pyenv/pyenv) a version manager with two important feature:
     - it automatically retrieves, compiles and installs a specific Python version and
     - you can choose a specific version per project.
 
@@ -174,7 +200,7 @@ These commands will be run inside container, so they are independently of host O
          To list all supported Python version you can run: `pyenv install -l`.
          This list can be updated every time that a `pyenv` update is available.
 
-13. We have almost done!
+14. We have almost done!
     We haven't yet install `npm` used by frida and Appium indeed `appium` server and its drivers are NodeJS programs.
     To install and manage it we will use a CLI tool called `nvm` which is a manager like `pyenv`.
       1. Install it with this [bash command](https://github.com/nvm-sh/nvm#install--update-script).
@@ -190,14 +216,14 @@ These commands will be run inside container, so they are independently of host O
          ```shell
          nvm alias default node
          ```
-14. [Install `usbfluxd` to replace `usbmuxd` socket file](https://github.com/sickcodes/Docker-OSX#connect-to-a-host-running-usbfluxd) to connect iPhone from host to container over network.
-15. Enable [parallel building](https://theos.dev/docs/parallel-building)
+15. [Install `usbfluxd` to replace `usbmuxd` socket file](https://github.com/sickcodes/Docker-OSX#connect-to-a-host-running-usbfluxd) to connect iPhone from host to container over network.
+16. Enable [parallel building](https://theos.dev/docs/parallel-building)
     ```shell
     echo '' >> ~/.zprofile
     echo PATH=\"$(brew --prefix make)/libexec/gnubin:\$PATH\" >> ~/.zprofile
     ```
     then restart shell.
-16. Done! Go to [previously section](#how-to-run).
+17. Done! Go to [previously section](#how-to-run).
 
 #### Capability: `wdaLaunchTimeout`
 
