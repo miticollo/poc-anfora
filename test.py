@@ -24,18 +24,6 @@ def print_usage():
     print(f"Usage: {script_name} <TEAM_ID> <UDID> [<TIMEOUT>] [<BUNDLE_ID>]", file=sys.stderr)
 
 
-def validate_timeout_arg(arg):
-    try:
-        minutes = int(arg)
-        if minutes <= 0:
-            print("<TIMEOUT> must be a positive integer!", file=sys.stderr)
-            return None
-        return 60 * 1000 * minutes
-    except ValueError:
-        print("<TIMEOUT> must be an integer!", file=sys.stderr)
-        return None
-
-
 class TestAppium(unittest.TestCase):
     def setUp(self) -> None:
         self.driver = webdriver.Remote(appium_server_url, capabilities)
@@ -61,15 +49,22 @@ if __name__ == '__main__':
         'udid': sys.argv[2]
     })
 
-    if len(sys.argv) == 4:
-        timeout = validate_timeout_arg(sys.argv[3])
-        if timeout:
-            capabilities['wdaLaunchTimeout'] = timeout
-    elif len(sys.argv) == 5:
-        timeout = validate_timeout_arg(sys.argv[3])
-        if timeout:
-            capabilities['wdaLaunchTimeout'] = timeout
-            capabilities['updatedWDABundleId'] = sys.argv[4]
+    if len(sys.argv) == 5:
+        capabilities['updatedWDABundleId'] = str(sys.argv[4])
+        minutes = int(sys.argv[3])
+        if minutes <= 0:
+            print("<TIMEOUT> must be a positive integer!", file=sys.stderr)
+            sys.exit(1)
+        capabilities['wdaLaunchTimeout'] = 60 * 1000 * minutes
+    elif len(sys.argv) == 4:
+        try:
+            minutes = int(sys.argv[3])
+            if minutes <= 0:
+                print("<TIMEOUT> must be a positive integer!", file=sys.stderr)
+                sys.exit(1)
+            capabilities['wdaLaunchTimeout'] = 60 * 1000 * minutes
+        except ValueError:
+            capabilities['updatedWDABundleId'] = str(sys.argv[3])
 
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAppium)
     unittest.TextTestRunner(verbosity=2).run(suite)

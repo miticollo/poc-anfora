@@ -55,14 +55,17 @@ When you have finished and your macOS container is ready you can follow these st
    <span><!-- https://appium.github.io/appium/docs/en/2.0/quickstart/test-py/ --></span>
    <span><!-- python ./test.py 'HS5TZXKJZJ' $(idevice_id -l) --></span>
    ```shell
-   python ./test.py <TEAM_ID> <UDID> [<TIMEOUT>]
+   python ./test.py <TEAM_ID> <UDID> [<TIMEOUT>] [<BUNDLE_ID>]
    ```
    To find `<UDID>`, you can use [`idevice_id -l`](https://github.com/libimobiledevice/libimobiledevice/blob/master/tools/idevice_id.c).
-   To set `<TEAM_ID>`, you need to create a blank project with Xcode and then run `devteamid.sh`. 
-   This will allow Xcode to download your certificate and save it in Keychain. 
-   The certificate contains your `<TEAM_ID>`.
-   If you have multiple accounts, use the `<TEAM_ID>` that you used to create the previous Xcode project. 
+   To set `<TEAM_ID>`, you must add the certificate for your Apple Developer account to your Mac. 
+   To do this, open Xcode and go to `Preferences...` > `Accounts`. 
+   Then run `devteamid.sh` and follow the instructions.
    This procedure can be simplified if you are enrolled in Apple Developer, as explained [here](https://developer.apple.com/help/account/manage-your-team/locate-your-team-id/).
+
+   > **Warning**<br/>
+   > If `appium` server fails with error: `Failed to register bundle identifier: The app identifier "it.uniupo.dsdf.WebDriverAgentRunner.xctrunner" cannot be registered to your development team because it is not available. Change your bundle identifier to a unique string to try again.`
+   > You can fix with the last positional argument of `test.py`: `[<BUNDLE_ID>]`.
 
 ## Tested Devices and iOS Versions
 
