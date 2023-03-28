@@ -165,7 +165,7 @@ These commands will be run inside container, so they are independently of host O
     Furthermore, `aria2` uses up to 16 connections to download files, making it 3-5x faster than [URLSession](https://developer.apple.com/documentation/foundation/urlsession).
     ```shell
     brew -v install robotsandpencils/made/xcodes aria2
-    xcodes install --latest --experimental-unxip --empty-trash --use-fastlane-auth
+    xcodes install --latest --experimental-unxip --empty-trash
     ```
     This step takes a long time, so in the meantime, you can continue with the next step.
 13. To install Python we will use [`pyenv`](https://github.com/pyenv/pyenv) a version manager with two important feature:
