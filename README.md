@@ -88,14 +88,6 @@ To support other operating systems, we will use Docker, specifically [this proje
 Please note that I have only tested this project on Linux. 
 However, the project also provides [instructions for Windows](https://github.com/sickcodes/Docker-OSX#id-like-to-run-docker-osx-on-windows).
 
-Unfortunately, this process cannot be automated, as it is necessary to manually enter your Apple ID, password, and 2FA code to properly install and configure Xcode.
-To automate this process, you would need to use Appium. 
-Additionally, to skip the initial setup, you would need to use a pre-installed Docker image from [Docker Hub](https://hub.docker.com).
-Please note that this solution requires a significant amount of bandwidth to upload and download the required image (e.g., [Catalina](https://github.com/sickcodes/Docker-OSX#run-catalina-pre-installed-)).
-
-> **Notes**<br/>
-> Press `CTRL + G` if your mouse gets stuck.
-
 ### Linux
 
 I'll show what you must do on your host and on macOS separately.
@@ -122,10 +114,11 @@ The information for the project that I linked before is extensive, so here are t
    > <span><!-- https://github.com/sickcodes/Docker-OSX/issues/549#issuecomment-1298595576 --></span>
    > You need to enable remote login in the virtual macOS first.
 2. [Initial setup](https://github.com/sickcodes/Docker-OSX#initial-setup)
-3. Choose an macOS release: I chose [Monterey](https://github.com/sickcodes/Docker-OSX#monterey-)
-   To increase verbosity you can pass the **global option** `-l` with argument `debug` to `docker`.
-   Pass the option `--env-file env.list` to set two environment variables in the container: `XCODES_USERNAME` and `XCODES_PASSWORD`.
+3. Choose a macOS release. I chose [Monterey](https://github.com/sickcodes/Docker-OSX#monterey-).
+   To increase verbosity, you can pass the **global option** `-l` with the argument `debug` to `docker`.
+   Pass the option `--env-file env.list` to set two environment variables in the container: `XCODES_USERNAME` and `XCODES_PASSWORD`. 
    They will be used by `xcodes` to authenticate you and download Xcode.
+   Pass the option `--name 'anfora_appium'` to correctly identify our container.
 4. In another terminal window start a TCP listener on port 3000 using `socat`, a more versatile and powerful networking tool than `nc`
    <span><!-- https://discord.com/channels/871502559842541679/871502643678281729/971015723805708359 --></span>
    ```shell
@@ -134,8 +127,10 @@ The information for the project that I linked before is extensive, so here are t
    In this way any incoming connections will be forked into a new process (`fork` option), so that multiple clients can connect simultaneously. 
    The `-` at the end specifies that data from the connection should be written to the standard output.
    We will use it as shared clipboard between host and guest if necessary.
-5. If you shut down the container you can restart it
-   following [these instructions](https://github.com/sickcodes/Docker-OSX#start-the-same-container-later-persistent-disk).
+5. If you have shut down the container, you can restart it by running:
+   ```shell
+   docker -l debug start -ai "$(docker ps -f 'name=anfora_appium' -q)"
+   ```
 
 #### On macOS side
 
@@ -170,7 +165,7 @@ These commands will be run inside container, so they are independently of host O
     Furthermore, `aria2` uses up to 16 connections to download files, making it 3-5x faster than [URLSession](https://developer.apple.com/documentation/foundation/urlsession).
     ```shell
     brew -v install robotsandpencils/made/xcodes aria2
-    xcodes install --latest --experimental-unxip --empty-trash
+    xcodes install --latest --experimental-unxip --empty-trash --use-fastlane-auth
     ```
     This step takes a long time, so in the meantime, you can continue with the next step.
 13. To install Python we will use [`pyenv`](https://github.com/pyenv/pyenv) a version manager with two important feature:
@@ -238,6 +233,10 @@ I increased this value to 3 minutes, but if this is not sufficient, you can incr
 In particular, when using the iOS driver, Appium [tries to connect once every 0.5 seconds (500 ms), until `wdaLaunchTimeout` is up](https://github.com/appium/WebDriverAgent/blob/209d01a680003fd4864061487b1c3a4e0b76b2db/lib/xcodebuild.js#L366).
 More precisely, when `wdaLaunchTimeout` is 3 minutes (180000 ms), there will be [360 pings because 180000 / 500](https://github.com/appium/WebDriverAgent/blob/209d01a680003fd4864061487b1c3a4e0b76b2db/lib/xcodebuild.js#L370).
 However, every [ping times out after 1 second (1000 ms)](https://github.com/appium/WebDriverAgent/blob/209d01a680003fd4864061487b1c3a4e0b76b2db/lib/xcodebuild.js#L377), so there will be at most 180 effective pings.
+
+#### Can this process be automated?
+
+
 
 ## Appium Inspector
 
