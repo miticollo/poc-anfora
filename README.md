@@ -148,6 +148,7 @@ These commands will be run inside container, so they are independently of host O
    4. [Show a lighter username/password prompt instead of a list of all the users](https://github.com/sickcodes/osx-optimizer#show-a-lighter-usernamepassword-prompt-instead-of-a-list-of-all-the-users)
 
    If you want you can also choose others optimizations.
+
 9. To connect to the previously started listener, open a terminal and run the command `nc 172.17.0.1 3000`.
    <span><!-- https://discord.com/channels/871502559842541679/871502643678281729/971015886196604948 --></span>
 10. In another terminal window and run `git` to install Command Line Tools for Xcode.
