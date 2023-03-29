@@ -11,7 +11,6 @@ function is_email_valid() {
   [[ "${1}" =~ ${regex} ]]
 }
 
-
 #######################################
 # Retrieve your DEVELOPMENT_TEAM from certs.
 # Arguments:
