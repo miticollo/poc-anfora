@@ -61,12 +61,8 @@ When you have finished and your macOS container is ready you can follow these st
    The procedure to retrieve your `<TEAM_ID>` depends on whether you are enrolled in the Apple Developer program or not. 
    If you are enrolled in the program, you can follow [this guide](https://developer.apple.com/help/account/manage-your-team/locate-your-team-id/) to find your `<TEAM_ID>`. 
    However, if you have a free account, you must create a blank project with Xcode and then run `devteamid.sh` with the Apple ID that you used to create the previous project.
-   When you create a new project, Xcode downloads a provisioning file and a certificate that contains the `Organizational Unit (OU)`, which contains your `<TEAM_ID>`.
-   You can find this certificate by exploring the Keychain app. Remember that `<TEAM_ID>` is unique and immutable, so save it for future uses.
-
-   > **Warning:**<br/>
-   > `xcodebuild` requires that the developer account used is in Xcode. 
-   > Therefore, you must add it by going to `Preferences...` > `Accounts`.
+   When you create a new project, Xcode downloads a provisioning file and a certificate that contains the `Organizational Unit (OU)`, which is your `<TEAM_ID>`.
+   You can find this certificate by exploring the Keychain app. Remember that `<TEAM_ID>` is unique and immutable, so **save it for future uses**.
 
    > **Warning**<br/>
    > If `appium` server fails with error: `Failed to register bundle identifier: The app identifier "it.uniupo.dsdf.WebDriverAgentRunner.xctrunner" cannot be registered to your development team because it is not available. Change your bundle identifier to a unique string to try again.`
@@ -237,7 +233,11 @@ However, every [ping times out after 1 second (1000 ms)](https://github.com/appi
 
 #### Can this process be automated?
 
+Unfo
 
+> **Warning**<br/>
+> `xcodebuild` requires that the developer account used is in Xcode. 
+> Therefore, you must add it by going to `Preferences...` > `Accounts`.
 
 ## Appium Inspector
 
