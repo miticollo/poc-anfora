@@ -112,8 +112,6 @@ The information for the project that I linked before is extensive, so here are t
 2. [Initial setup](https://github.com/sickcodes/Docker-OSX#initial-setup)
 3. Choose a macOS release. I chose [Monterey](https://github.com/sickcodes/Docker-OSX#monterey-).
    To increase verbosity, you can pass the **global option** `-l` with the argument `debug` to `docker`.
-   Pass the option `--env-file env.list` to set two environment variables in the container: `XCODES_USERNAME` and `XCODES_PASSWORD`. 
-   They will be used by `xcodes` to authenticate you and download Xcode.
    Pass the option `--name 'anfora_appium'` to correctly identify our container.
 4. In another terminal window start a TCP listener on port 3000 using `socat`, a more versatile and powerful networking tool than `nc`
    <span><!-- https://discord.com/channels/871502559842541679/871502643678281729/971015723805708359 --></span>
@@ -125,8 +123,11 @@ The information for the project that I linked before is extensive, so here are t
    We will use it as shared clipboard between host and guest if necessary.
 5. If you have shut down the container, you can restart it by running:
    ```shell
-   docker -l debug start -ai "$(docker ps -f 'name=anfora_appium' -q)"
+   docker -l debug start -ai "$(docker ps -a -f 'name=anfora_appium' -q)"
    ```
+   > **Note**<br/>
+   > This command lists all containers (running and stopped) and filters the output based on the container name.
+   > It then prints only the short UUID identifier using the `-q` option, which is used as input for the `docker start` command.
 
 #### On macOS side
 
@@ -152,7 +153,7 @@ These commands will be run inside container, so they are independently of host O
 11. [Install HomeBrew](https://brew.sh/#install).
 12. To install Xcode, we will use a CLI tool called [`xcodes`](https://github.com/RobotsAndPencils/xcodes) for two reasons:
     - this app automatically manages two or more different versions of Xcode and
-    - another advantage is that `xcodes` can use [`aria2`](https://aria2.github.io/) a CLI tool to speed up the download of Xcode.
+    - another advantage is that `xcodes` can use [`aria2`](https://aria2.github.io/), a CLI tool to speed up the download of Xcode.
 
     Every version of Xcode comes with its own SDK version, which means that you need to install an old version of Xcode to use an old SDK version.
     For example, if you want to install the latest version of Xcode from the App Store and also need version 11.7 to compile your app for iOS 12+ and arm64e, you can download Xcode 11.7 from [here](https://developer.apple.com/services-account/download?path=/Developer_Tools/Xcode_11.7/Xcode_11.7.xip).
@@ -162,9 +163,20 @@ These commands will be run inside container, so they are independently of host O
     Furthermore, `aria2` uses up to 16 connections to download files, making it 3-5x faster than [URLSession](https://developer.apple.com/documentation/foundation/urlsession).
     ```shell
     brew -v install robotsandpencils/made/xcodes aria2
-    xcodes install --latest --experimental-unxip --empty-trash
+    # Adjust XCODES_USERNAME and XCODES_PASSWORD to use your Apple ID
+    XCODES_USERNAME="20024182@studenti.uniupo.it" XCODES_PASSWORD="..." xcodes install --latest --experimental-unxip --empty-trash
     ```
     This step takes a long time, so in the meantime, you can continue with the next step.
+
+    > **Note**<br/>
+    > It is not possible to pass `XCODES_USERNAME` and `XCODES_PASSWORD` to the container with `docker run` options `-e` and `--env-file`, because Docker-OSX creates a Docker container based on ArchLinux, then installs in it QEMU.
+    > This is necessary because Docker-OSX uses another project called [OSX-KVM](https://github.com/kholia/OSX-KVM) under the hood.<br/>
+    > To prove that an ArchLinux Docker container is used under macOS, we can use the following Bash command inside the container:
+    > ```shell
+    > docker exec -it 'anfora_appium' bash -c 'grep -e vmx -e svm /proc/cpuinfo'
+    > ```
+    > This command checks if a [requirement](https://github.com/kholia/OSX-KVM#requirements) is met.
+
 13. To install Python we will use [`pyenv`](https://github.com/pyenv/pyenv) a version manager with two important feature:
     - it automatically retrieves, compiles and installs a specific Python version and
     - you can choose a specific version per project.
