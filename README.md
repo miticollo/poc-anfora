@@ -51,7 +51,7 @@ When you have finished and your macOS container is ready you can follow these st
    npx appium server --log-level 'debug:error' --log-timestamp --local-timezone
    ```
 7. <span id="team-id"></span>
-   In another terminal window, execute Python script
+   In another terminal window, execute the following Python script:
    <span><!-- https://appium.github.io/appium/docs/en/2.0/quickstart/test-py/ --></span>
    <span><!-- python ./test.py 'HS5TZXKJZJ' $(idevice_id -l) --></span>
    ```shell
@@ -59,10 +59,13 @@ When you have finished and your macOS container is ready you can follow these st
    ```
    To find `<UDID>`, you can use [`idevice_id -l`](https://github.com/libimobiledevice/libimobiledevice/blob/master/tools/idevice_id.c).
    The procedure to retrieve your `<TEAM_ID>` depends on whether you are enrolled in the Apple Developer program or not. 
-   If you are enrolled in the program, you can follow [this guide](https://developer.apple.com/help/account/manage-your-team/locate-your-team-id/) to find your `<TEAM_ID>`. 
+   If you are enrolled in the program, you can follow [this guide](https://developer.apple.com/help/account/manage-your-team/locate-your-team-id/) to find your `<TEAM_ID>`.
    However, if you have a free account, you must create a blank project with Xcode and then run `devteamid.sh` with the Apple ID that you used to create the previous project.
-   When you create a new project, Xcode downloads a provisioning file and a certificate that contains the `Organizational Unit (OU)`, which is your `<TEAM_ID>`.
-   You can find this certificate by exploring the Keychain app. Remember that `<TEAM_ID>` is unique and immutable, so **save it for future uses**.
+   When you create a new project, Xcode downloads a provisioning file and generates an identity (certificate + private key).
+   <span><!-- https://www.ibm.com/docs/en/ibm-mq/9.3?topic=certificates-distinguished-names --></span>
+   The `Organizational Unit (OU)` attribute in this X.509 certificate is set to `<TEAM_ID>` and it is assigned to you by Apple. 
+   Remember that `<TEAM_ID>` is unique and immutable, so **save it for future uses**.
+   You can also find this certificate by exploring the Keychain app, in particular looking in `login.keychain`.
 
    > **Warning**<br/>
    > If `appium` server fails with error: `Failed to register bundle identifier: The app identifier "it.uniupo.dsdf.WebDriverAgentRunner.xctrunner" cannot be registered to your development team because it is not available. Change your bundle identifier to a unique string to try again.`

@@ -19,10 +19,6 @@ function is_email_valid() {
 #   0 if DEVELOPMENT_TEAM is printed, non-zero on error.
 #######################################
 function main() {
-  # requires openssl@3 from Homebrew
-  _openssl=$(brew --prefix openssl 2>/dev/null)/bin/openssl
-  [[ -x $_openssl ]] || { err "missing openssl, try \`brew install openssl\`"; exit 1; }
-
   if [ -z "$1" ]; then
     echo "Usage: ${0} APPLE_ID"
     exit 1
@@ -42,7 +38,7 @@ function main() {
   # https://stackoverflow.com/a/74194064
   # https://stackoverflow.com/a/70464809
   local dev_team
-  dev_team=$(security find-certificate -c "${1}" -p login.keychain | "${_openssl}" x509 -noout -subject -nameopt multiline | grep 'organizationalUnitName' | awk '{ print $3 }')
+  dev_team=$(security find-certificate -c "${1}" -p login.keychain 2> /dev/null | openssl x509 -noout -subject -nameopt multiline | grep 'organizationalUnitName' | awk '{ print $3 }')
   echo "DEVELOPMENT_TEAM=${dev_team}"
 
 }
@@ -50,3 +46,4 @@ function main() {
 main "${@}"
 exit 0
 
+`
