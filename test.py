@@ -2,14 +2,19 @@
 
 import os
 import sys
-import time
 import unittest
-from typing import Any, Dict
+from typing import List, TYPE_CHECKING, Any, Dict
 
 import frida
 from appium import webdriver
 from appium.options.common import AppiumOptions
 from appium.webdriver.common.appiumby import AppiumBy
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
+if TYPE_CHECKING:
+    from appium.webdriver.webdriver import WebDriver
+    from appium.webdriver.webelement import WebElement
 
 # For more capabilities: https://appium.github.io/appium-xcuitest-driver/latest/capabilities/
 # https://github.com/appium/python-client/blob/37e357b1371f0e76ddbe3d0954d3315df19c15d1/test/functional/ios/helper/desired_capabilities.py#L28-L36
@@ -34,6 +39,39 @@ def print_usage():
     print(f"Usage: {script_name} <TEAM_ID> <UDID> <IOS_VERSION> [<TIMEOUT>] [<BUNDLE_ID>]", file=sys.stderr)
 
 
+# https://github.com/appium/python-client/blob/bb76339bc6b9bc3ae8eab7de1c416a1ff906317e/test/functional/test_helper.py#L81-L97
+def wait_for_element(driver: 'WebDriver', locator: str, value: str, timeout_sec: float = 10) -> 'WebElement':
+    """Wait until the element located
+    Args:
+        driver: WebDriver instance
+        locator: Locator like WebDriver, Mobile JSON Wire Protocol
+            (e.g. `appium.webdriver.common.appiumby.AppiumBy.ACCESSIBILITY_ID`)
+        value: Query value to locator
+        timeout_sec: Maximum time to wait the element. If time is over, `TimeoutException` is thrown
+    Raises:
+        `selenium.common.exceptions.TimeoutException`
+    Returns:
+        The found WebElement
+    """
+    return WebDriverWait(driver, timeout_sec).until(EC.presence_of_element_located((locator, value)))
+
+
+def wait_for_elements(driver: 'WebDriver', locator: str, value: str, timeout_sec: float = 10) -> List['WebElement']:
+    """Wait until the elements located
+    Args:
+        driver: WebDriver instance
+        locator: Locator like WebDriver, Mobile JSON Wire Protocol
+            (e.g. `appium.webdriver.common.appiumby.AppiumBy.ACCESSIBILITY_ID`)
+        value: Query value to locator
+        timeout_sec: Maximum time to wait the element. If time is over, `TimeoutException` is thrown
+    Raises:
+        `selenium.common.exceptions.TimeoutException`
+    Returns:
+        The found List[WebElement]
+    """
+    return WebDriverWait(driver, timeout_sec).until(EC.presence_of_all_elements_located((locator, value)))
+
+
 class TestAppium(unittest.TestCase):
     def setUp(self) -> None:
         # https://github.com/appium/python-client/blob/37e357b1371f0e76ddbe3d0954d3315df19c15d1/test/functional/ios/safari_tests.py#L28
@@ -47,10 +85,10 @@ class TestAppium(unittest.TestCase):
         self.device = frida.get_device(desired_caps['udid'])
         aux_kwargs = {}
         self.spawned_pid = self.device.spawn(BUNDLE_ID, stdio="inherit", **aux_kwargs)
-        self.session = self.device.attach(self.spawned_pid, realm="native").on
+        self.session = self.device.attach(self.spawned_pid, realm="native")
         self.device.resume(self.spawned_pid)
-        self.driver.find_element(by=AppiumBy.ACCESSIBILITY_ID, value=[app for app in self.device.enumerate_applications() if app.identifier == BUNDLE_ID][0].name)
-        self.driver.find_elements(by=AppiumBy.ACCESSIBILITY_ID, value='Conversation list item')[0].click()
+        wait_for_element(self.driver, AppiumBy.XPATH,
+                         '(//XCUIElementTypeCell[@name="Conversation list item"])[1]').click()
         el = self.driver.find_element(by=AppiumBy.ACCESSIBILITY_ID, value='Message input box')
         el.click()
         el.send_keys("Hello by Appium!")

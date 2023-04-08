@@ -53,9 +53,9 @@ When you have finished and your macOS container is ready you can follow these st
 7. <span id="team-id"></span>
    In another terminal window, execute the following Python script:
    <span><!-- https://appium.github.io/appium/docs/en/2.0/quickstart/test-py/ --></span>
-   <span><!-- python ./test.py 'HS5TZXKJZJ' $(idevice_id -l) --></span>
+   <span><!-- python ./test.py 'MS523TRG78' $(idevice_id -l) "$(ideviceinfo -k ProductVersion)" --></span>
    ```shell
-   python ./test.py <TEAM_ID> <UDID> [<TIMEOUT>] [<BUNDLE_ID>]
+   python ./test.py <TEAM_ID> <UDID> <IOS_VERSION> [<TIMEOUT>] [<BUNDLE_ID>]
    ```
    To find `<UDID>`, you can use [`idevice_id -l`](https://github.com/libimobiledevice/libimobiledevice/blob/master/tools/idevice_id.c).
    The procedure to retrieve your `<TEAM_ID>` depends on whether you are enrolled in the Apple Developer program or not. 
@@ -71,15 +71,14 @@ When you have finished and your macOS container is ready you can follow these st
    > If `appium` server fails with error: `Failed to register bundle identifier: The app identifier "it.uniupo.dsdf.WebDriverAgentRunner.xctrunner" cannot be registered to your development team because it is not available. Change your bundle identifier to a unique string to try again.`
    > You can fix it with the optional argument `[<BUNDLE_ID>]`.
 
+   > **Warning**<br/>
+   > During the initial installation, you may be prompted to enter your password due to `codesign` requiring access to the Keychain.
+   > To save time, it is recommended to select "Always Allow".
+
 ## Tested Devices and iOS Versions
 
 - iPhone X: iOS 16.3.1
-- iPad Pro (10,5"): iOS 16.3.1
 - iPhone SE 2020: iOS 14.4.2
-- iPhone XR: iOS 15.1b1
-- iPad mini 2: iOS 12.5.6
-- iPad mini 2: iOS 12.5.7
--
 
 ## Other OSs
 
@@ -199,10 +198,10 @@ These commands will be run inside container, so they are independently of host O
          pyenv init
          ```
          and follow instructions.
-      3. Install the current latest Python 3 version, in my case 3.11.2
+      3. Install the current latest Python 3 version, in my case 3.11.3
          ```shell
-         pyenv install -v 3.11.2
-         pyenv global 3.11.2
+         pyenv install -v 3.11.3
+         pyenv global 3.11.3
          ```
          To list all supported Python version you can run: `pyenv install -l`.
          This list can be updated every time that a `pyenv` update is available.
@@ -246,7 +245,7 @@ In particular, when using the iOS driver, Appium [tries to connect once every 0.
 More precisely, when `wdaLaunchTimeout` is 3 minutes (180000 ms), there will be [360 pings because 180000 / 500](https://github.com/appium/WebDriverAgent/blob/209d01a680003fd4864061487b1c3a4e0b76b2db/lib/xcodebuild.js#L370).
 However, every [ping times out after 1 second (1000 ms)](https://github.com/appium/WebDriverAgent/blob/209d01a680003fd4864061487b1c3a4e0b76b2db/lib/xcodebuild.js#L377), so there will be at most 180 effective pings.
 
-#### How can we use this container to run AnForA on non-macOS OS?
+#### How to Integrate Docker Container into AnForA Workflow?
 
 
 
@@ -257,3 +256,5 @@ However, every [ping times out after 1 second (1000 ms)](https://github.com/appi
 ## Appium Inspector
 
 [Here](https://github.com/appium/appium-inspector/releases/tag/v2023.3.1) you can find the latest version.
+
+![inspector](./screenshot/inspector.png)
