@@ -246,9 +246,9 @@ In particular, when using the iOS driver, Appium [tries to connect once every 0.
 More precisely, when `wdaLaunchTimeout` is 3 minutes (180000 ms), there will be [360 pings because 180000 / 500](https://github.com/appium/WebDriverAgent/blob/209d01a680003fd4864061487b1c3a4e0b76b2db/lib/xcodebuild.js#L370).
 However, every [ping times out after 1 second (1000 ms)](https://github.com/appium/WebDriverAgent/blob/209d01a680003fd4864061487b1c3a4e0b76b2db/lib/xcodebuild.js#L377), so there will be at most 180 effective pings.
 
-#### Can this process be automated?
+#### How can we use this container to run AnForA on non-macOS OS?
 
-Unfo
+
 
 > **Warning**<br/>
 > `xcodebuild` requires that the developer account used is in Xcode. 
