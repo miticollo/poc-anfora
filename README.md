@@ -257,4 +257,4 @@ However, every [ping times out after 1 second (1000 ms)](https://github.com/appi
 
 [Here](https://github.com/appium/appium-inspector/releases/tag/v2023.3.1) you can find the latest version.
 
-![inspector](./screenshot/inspector.png)
+![inspector](./screenshot/inspector.png?raw=true)
