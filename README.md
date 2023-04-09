@@ -12,6 +12,9 @@ If you do not complete this step in time, the script will fail.
 If you prefer, you can sideload the [blank-app](https://github.com/miticollo/blank-app/releases/latest) using the same account that you will use for the WDA app. 
 This will allow you to trust the developer account without any time-related issues.
 
+## Requirements
+- [Session](https://getsession.org/iphone)
+
 ## How to run
 
 If you don't have a macOS you can follow [below instructions](#other-oss).
