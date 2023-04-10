@@ -13,7 +13,7 @@ If you prefer, you can sideload the [blank-app](https://github.com/miticollo/bla
 This will allow you to trust the developer account without any time-related issues.
 
 ## Requirements
-- [Session](https://getsession.org/iphone)
+- [Session](https://getsession.org/iphone) with at least one chat.
 
 ## How to run
 
@@ -56,9 +56,9 @@ When you have finished and your macOS container is ready you can follow these st
 7. <span id="team-id"></span>
    In another terminal window, execute the following Python script:
    <span><!-- https://appium.github.io/appium/docs/en/2.0/quickstart/test-py/ --></span>
-   <span><!-- python ./test.py 'MS523TRG78' $(idevice_id -l) "$(ideviceinfo -k ProductVersion)" --></span>
+   <span><!-- python ./test.py "$(idevice_id -l)" "$(ideviceinfo -k ProductVersion)" -b 'it.uniupo.dsdf.WebDriverAgentRunner' --team-id 'MS523TRG78' --></span>
    ```shell
-   python ./test.py <TEAM_ID> <UDID> <IOS_VERSION> [<TIMEOUT>] [<BUNDLE_ID>]
+   python  test.py [-h] [-b BUNDLE_ID] [-t MINUTES] [--team-id TEAM_ID] UDID IOS_VERSION
    ```
    To find `<UDID>`, you can use [`idevice_id -l`](https://github.com/libimobiledevice/libimobiledevice/blob/master/tools/idevice_id.c).
    The procedure to retrieve your `<TEAM_ID>` depends on whether you are enrolled in the Apple Developer program or not. 
@@ -72,7 +72,7 @@ When you have finished and your macOS container is ready you can follow these st
 
    > **Warning**<br/>
    > If `appium` server fails with error: `Failed to register bundle identifier: The app identifier "it.uniupo.dsdf.WebDriverAgentRunner.xctrunner" cannot be registered to your development team because it is not available. Change your bundle identifier to a unique string to try again.`
-   > You can fix it with the optional argument `[<BUNDLE_ID>]`.
+   > You can fix it with the option `[-b BUNDLE_ID]`.
 
    > **Warning**<br/>
    > During the initial installation, you may be prompted to enter your password due to `codesign` requiring access to the Keychain.

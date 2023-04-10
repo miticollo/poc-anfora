@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-import os
-import sys
+import argparse
+import re
 import unittest
-from typing import List, TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict
 
 import frida
 from appium import webdriver
@@ -20,12 +20,7 @@ if TYPE_CHECKING:
 # https://github.com/appium/python-client/blob/37e357b1371f0e76ddbe3d0954d3315df19c15d1/test/functional/ios/helper/desired_capabilities.py#L28-L36
 desired_caps: Dict[str, Any] = {
     'platformName': 'iOS',
-    'automationName': 'XCUITest',
-    'updatedWDABundleId': 'it.uniupo.dsdf.WebDriverAgentRunner',
-    # xcodebuild --help
-    'allowProvisioningDeviceRegistration': True,
-    'showXcodeLog': True,
-    'wdaLaunchTimeout': 60 * 1000 * 3,  # 3 minutes
+    'automationName': 'XCUITest'
 }
 
 # https://github.com/appium/python-client/blob/37e357b1371f0e76ddbe3d0954d3315df19c15d1/test/helpers/constants.py#L1
@@ -34,42 +29,9 @@ SERVER_URL_BASE = 'http://127.0.0.1:4723'
 BUNDLE_ID = 'com.loki-project.loki-messenger'
 
 
-def print_usage():
-    script_name = os.path.basename(__file__)
-    print(f"Usage: {script_name} <TEAM_ID> <UDID> <IOS_VERSION> [<TIMEOUT>] [<BUNDLE_ID>]", file=sys.stderr)
-
-
 # https://github.com/appium/python-client/blob/bb76339bc6b9bc3ae8eab7de1c416a1ff906317e/test/functional/test_helper.py#L81-L97
 def wait_for_element(driver: 'WebDriver', locator: str, value: str, timeout_sec: float = 10) -> 'WebElement':
-    """Wait until the element located
-    Args:
-        driver: WebDriver instance
-        locator: Locator like WebDriver, Mobile JSON Wire Protocol
-            (e.g. `appium.webdriver.common.appiumby.AppiumBy.ACCESSIBILITY_ID`)
-        value: Query value to locator
-        timeout_sec: Maximum time to wait the element. If time is over, `TimeoutException` is thrown
-    Raises:
-        `selenium.common.exceptions.TimeoutException`
-    Returns:
-        The found WebElement
-    """
     return WebDriverWait(driver, timeout_sec).until(EC.presence_of_element_located((locator, value)))
-
-
-def wait_for_elements(driver: 'WebDriver', locator: str, value: str, timeout_sec: float = 10) -> List['WebElement']:
-    """Wait until the elements located
-    Args:
-        driver: WebDriver instance
-        locator: Locator like WebDriver, Mobile JSON Wire Protocol
-            (e.g. `appium.webdriver.common.appiumby.AppiumBy.ACCESSIBILITY_ID`)
-        value: Query value to locator
-        timeout_sec: Maximum time to wait the element. If time is over, `TimeoutException` is thrown
-    Raises:
-        `selenium.common.exceptions.TimeoutException`
-    Returns:
-        The found List[WebElement]
-    """
-    return WebDriverWait(driver, timeout_sec).until(EC.presence_of_all_elements_located((locator, value)))
 
 
 class TestAppium(unittest.TestCase):
@@ -98,33 +60,66 @@ class TestAppium(unittest.TestCase):
         self.device.kill(self.spawned_pid)
 
 
-if __name__ == '__main__':
-    if len(sys.argv) < 4 or len(sys.argv) > 6:
-        print_usage()
-        sys.exit(1)
+def check_team_id(value):
+    up = str.upper(value)
+    if not re.match(r'^[A-Z0-9]{10}$', up):
+        raise argparse.ArgumentTypeError('Team ID must be a 10-character string of uppercase letters and numbers.')
+    return up
 
-    desired_caps['platformVersion'] = sys.argv[3]
+
+def check_positive(value):
+    try:
+        ivalue = int(value)
+        if ivalue <= 0:
+            raise argparse.ArgumentTypeError(f'{value} is not a positive integer.')
+        return ivalue
+    except ValueError:
+        raise argparse.ArgumentTypeError(f'Can\'t cast `{value}` to a positive integer.')
+
+
+def nonempty_string(value):
+    if not value:
+        raise argparse.ArgumentTypeError('Empty string found.')
+    return value
+
+
+def main():
+    parser = argparse.ArgumentParser(description='MWE for Appium+frida testing on iOS devices.')
+    parser.add_argument('UDID', help='the UDID of the iOS device to test', type=nonempty_string)
+    parser.add_argument('IOS_VERSION', help='the version of iOS running on the device', type=nonempty_string)
+    parser.add_argument('-b', '--bundle-id', metavar='BUNDLE_ID', help='set the bundle identifier of the installed app',
+                        type=nonempty_string)
+    parser.add_argument('-t', '--timeout', metavar='MINUTES', type=check_positive,
+                        help='set the timeout for WebDriverAgent to become pingable (in minutes)')
+    parser.add_argument('--team-id', metavar='TEAM_ID', type=check_team_id,
+                        help='set the 10-character team identifier for your Apple developer account')
+    args = parser.parse_args()
+
+    if args.team_id is None and args.bundle_id is not None:
+        parser.error('The --bundle-id option requires --team-id.')
+
     desired_caps.update({
-        'xcodeOrgId': sys.argv[1],
-        'udid': sys.argv[2]
+        'udid': args.UDID,
+        'platformVersion': args.IOS_VERSION
     })
 
-    if len(sys.argv) == 6:
-        desired_caps['updatedWDABundleId'] = str(sys.argv[5])
-        minutes = int(sys.argv[4])
-        if minutes <= 0:
-            print("<TIMEOUT> must be a positive integer!", file=sys.stderr)
-            sys.exit(1)
-        desired_caps['wdaLaunchTimeout'] = 60 * 1000 * minutes
-    elif len(sys.argv) == 5:
-        try:
-            minutes = int(sys.argv[4])
-            if minutes <= 0:
-                print("<TIMEOUT> must be a positive integer!", file=sys.stderr)
-                sys.exit(1)
-            desired_caps['wdaLaunchTimeout'] = 60 * 1000 * minutes
-        except ValueError:
-            desired_caps['updatedWDABundleId'] = str(sys.argv[4])
+    if args.timeout is not None:
+        desired_caps.update({'wdaLaunchTimeout': args.timeout * 1000 * 60})
+    if args.bundle_id is not None:
+        desired_caps.update({'updatedWDABundleId': args.bundle_id})
+    if args.team_id is not None:
+        desired_caps.update({
+            'xcodeSigningId': args.team_id,
+            # xcodebuild --help
+            'allowProvisioningDeviceRegistration': True,
+            'showXcodeLog': True
+        })
+    else:
+        desired_caps.update({'usePrebuiltWDA': True})
 
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAppium)
     unittest.TextTestRunner(verbosity=2).run(suite)
+
+
+if __name__ == '__main__':
+    main()
