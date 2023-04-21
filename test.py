@@ -3,11 +3,12 @@
 import argparse
 import atexit
 import logging
+import multiprocessing
 import re
 import sys
 import threading
 import time
-from multiprocessing import Process
+from multiprocessing import Process, Event
 from sys import platform
 from typing import TYPE_CHECKING, Any, Dict
 
@@ -42,7 +43,8 @@ def wait_for_element(driver: 'WebDriver', locator: str, value: str, timeout_sec:
 
 
 def test_appium(device):
-    driver = webdriver.Remote(SERVER_URL_BASE, options=AppiumOptions().load_capabilities(desired_caps))
+    driver: WebDriver = webdriver.Remote(SERVER_URL_BASE, options=AppiumOptions().load_capabilities(desired_caps))
+    driver.update_settings({'snapshotMaxDepth': 100})
 
     spawned_pid = device.spawn([BUNDLE_ID])
     device.attach(spawned_pid, realm="native")
@@ -143,10 +145,10 @@ def mirroring_mjpeg(port):
     pass
 
 
-def mirroring_quicktime(udid: str, level: int):
+def mirroring_quicktime(udid: str, level: int, event: Event):
     ioscreen.util.set_logging_level(level)
     device: usb.Device = find_ios_device(udid)
-    record_gstreamer(device)
+    record_gstreamer(device, event)
 
 
 # define a function to terminate process
@@ -175,21 +177,21 @@ def main():
 
     global process
     process = None
-    if args.mjpeg is not None:
-        process = Process(target=mirroring_mjpeg, args=(args.mjpeg,))
-        process.start()
-        atexit.register(clean_up)
-    elif args.quicktime:
+    if args.quicktime:
+        # create a shared event object
+        event: multiprocessing.Event = Event()
         # create a process
         if args.verbose:
-            process = Process(target=mirroring_quicktime, args=(desired_caps['udid'].replace('-', ''), logging.DEBUG,))
+            process = Process(target=mirroring_quicktime,
+                              args=(desired_caps['udid'].replace('-', ''), logging.DEBUG, event,))
         else:
-            process = Process(target=mirroring_quicktime, args=(desired_caps['udid'].replace('-', ''), logging.INFO,))
+            process = Process(target=mirroring_quicktime,
+                              args=(desired_caps['udid'].replace('-', ''), logging.INFO, event,))
         # run the new process
         process.start()
         atexit.register(clean_up)
-
-    time.sleep(4)
+        # wait for the event to be set
+        event.wait()
 
     t = tidevice.Device(udid=desired_caps['udid'])
     device = frida.get_device(desired_caps['udid'])
