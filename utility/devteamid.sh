@@ -40,10 +40,7 @@ function main() {
   local dev_team
   dev_team=$(security find-certificate -c "${1}" -p login.keychain 2> /dev/null | openssl x509 -noout -subject -nameopt multiline | grep 'organizationalUnitName' | awk '{ print $3 }')
   echo "DEVELOPMENT_TEAM=${dev_team}"
-
 }
 
 main "${@}"
 exit 0
-
-`

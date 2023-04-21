@@ -1,6 +1,6 @@
 # Appium on iOS stock
 
-You must enable Remote Automation and Web Inspector in Safari Advanced settings.
+You must enable Remote Automation and [Web Inspector in Safari Advanced settings](https://appium.github.io/appium-xcuitest-driver/4.19/device-preparation/#enable-web-testing-availability).
 
 > **Note**<br/>
 > Disk Developer Image is not required.
@@ -58,7 +58,7 @@ When you have finished and your macOS container is ready you can follow these st
    <span><!-- https://appium.github.io/appium/docs/en/2.0/quickstart/test-py/ --></span>
    <span><!-- python ./test.py "$(idevice_id -l)" "$(ideviceinfo -k ProductVersion)" -b 'it.uniupo.dsdf.WebDriverAgentRunner' --team-id 'MS523TRG78' --></span>
    ```shell
-   python  test.py [-h] [-b BUNDLE_ID] [-t MINUTES] [--team-id TEAM_ID] UDID IOS_VERSION
+   python  ./test.py [-h] [-b BUNDLE_ID] [-t MINUTES] [--team-id TEAM_ID] [-p PORT] [-m] [-v] UDID IOS_VERSION
    ```
    To find `<UDID>`, you can use [`idevice_id -l`](https://github.com/libimobiledevice/libimobiledevice/blob/master/tools/idevice_id.c).
    The procedure to retrieve your `<TEAM_ID>` depends on whether you are enrolled in the Apple Developer program or not. 

@@ -1,6 +1,29 @@
 {
-  "devDependencies": {
-    "appium": "^2.0.0-beta.57",
-    "appium-xcuitest-driver": "^4.19.1"
+  "name": "test-appium",
+  "version": "1.0.0",
+  "description": "MWE for Appium+frida testing on iOS devices.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/miticollo/test-appium.git"
+  },
+  "keywords": [
+    "appium",
+    "frida",
+    "python",
+    "ios"
+  ],
+  "author": "Lorenzo Ferron",
+  "bugs": {
+    "url": "https://github.com/miticollo/test-appium/issues"
+  },
+  "homepage": "https://github.com/miticollo/test-appium#readme",
+  "dependencies": {
+    "@appium/doctor": "^2.0.13",
+    "@types/frida-gum": "^18.1.0",
+    "@types/node": "^18.0.6",
+    "appium": "^2.0.0-beta.62",
+    "appium-xcuitest-driver": "^4.21.25",
+    "frida-compile": "^15.0.8",
+    "mjpeg-consumer": "^2.0.0"
   }
 }
