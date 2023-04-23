@@ -1,7 +1,7 @@
 {
-  "name": "test-appium",
+  "name": "poc-appium",
   "version": "1.0.0",
-  "description": "MWE for Appium+frida testing on iOS devices.",
+  "description": "PoC for AnForA on iOS devices.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/miticollo/test-appium.git"
@@ -10,11 +10,18 @@
     "appium",
     "frida",
     "python",
-    "ios"
+    "ios",
+    "mjpeg",
+    "quicktime"
   ],
   "author": "Lorenzo Ferron",
   "bugs": {
-    "url": "https://github.com/miticollo/test-appium/issues"
+    "url": "https://github.com/miticollo/test-appium/issues",
+    "email" : "20024182@studenti.uniupo.it"
+  },
+  "scripts": {
+    "appium": "export DEVELOPER_DIR=$npm_package_config_XCODE_DIR && npx appium server --session-override",
+    "appium-dbg": "export DEVELOPER_DIR=$npm_package_config_XCODE_DIR && npx appium server --log-level 'debug:error' --log-timestamp --local-timezone --session-override"
   },
   "homepage": "https://github.com/miticollo/test-appium#readme",
   "dependencies": {
@@ -25,5 +32,8 @@
     "appium-xcuitest-driver": "^4.21.25",
     "frida-compile": "^15.0.8",
     "mjpeg-consumer": "^2.0.0"
+  },
+  "config": {
+    "XCODE_DIR": "/Applications/Xcode.app/Contents/Developer"
   }
 }

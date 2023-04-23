@@ -4,4 +4,6 @@ tidevice[openssl]
 paramiko
 mpv
 PyQt5
+PyQt5-stubs
+scp
 git+https://github.com/miticollo/ios-screen-record.git

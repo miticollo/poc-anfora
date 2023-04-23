@@ -1,6 +1,4 @@
-# Appium on iOS stock
-
-You must enable Remote Automation and [Web Inspector in Safari Advanced settings](https://appium.github.io/appium-xcuitest-driver/4.19/device-preparation/#enable-web-testing-availability).
+# PoC AnForA
 
 > **Note**<br/>
 > Disk Developer Image is not required.
@@ -17,10 +15,10 @@ This will allow you to trust the developer account without any time-related issu
 
 ## How to run
 
-If you don't have a macOS you can follow [below instructions](#other-oss).
-When you have finished and your macOS container is ready you can follow these steps to install WDA app.
+If you don't have a macOS, you can follow [below instructions](#other-oss).
+When you have finished and your macOS container is ready, you can follow these steps to install WDA app.
 
-1. On iOS 16 real devices require enabling developer mode.
+1. On iOS 16, real devices require enabling developer mode.
    After plug the iPhone
    run [`idevicedevmodectl`](https://github.com/libimobiledevice/libimobiledevice/blob/master/tools/idevicedevmodectl.c)
    ```shell
@@ -260,4 +258,4 @@ However, every [ping times out after 1 second (1000 ms)](https://github.com/appi
 
 [Here](https://github.com/appium/appium-inspector/releases/tag/v2023.3.1) you can find the latest version.
 
-![inspector](./screenshot/inspector.png?raw=true)
+![inspector](screenshots/inspector.png?raw=true)
