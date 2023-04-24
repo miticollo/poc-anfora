@@ -9,12 +9,13 @@ import frida
 import tidevice
 
 from mirroring import clean_up
-from my_appium import desired_caps, wait_for_element
+from my_appium import desired_caps
 from utils import wait_until
 
 SERVER_URL_BASE = 'http://127.0.0.1:4723'
 BUNDLE_ID = 'com.loki-project.loki-messenger'
 WDA_CF_BUNDLE_NAME = 'WebDriverAgentRunner-Runner'
+EXPERIMENT_NAME = "SampleExperiment"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("AnForA")
@@ -40,47 +41,12 @@ def parsing():
     group.add_argument('--quicktime', action='store_true', default=False,
                        help='show a mirror of the screen of your iPhone using QuickTime protocol')
     parser.add_argument('-v', '--verbose', action='store_true', default=False)
-    # TODO: add options to Analysis Path Detection
     args = parser.parse_args()
-
     if args.team_id is None and args.bundle_id is not None:
         parser.error('The --bundle-id option requires --team-id.')
     if args.port == args.mjpeg:
         parser.error('Port conflict.')
     return args
-
-
-def test_appium(device, port: None):
-    from appium.options.common import AppiumOptions
-    from appium.webdriver.webdriver import WebDriver
-    from appium import webdriver
-    driver: WebDriver = webdriver.Remote(SERVER_URL_BASE, options=AppiumOptions().load_capabilities(desired_caps))
-
-    if port is not None:
-        from src.mirroring import mirroring_mjpeg
-        process = multiprocessing.Process(target=mirroring_mjpeg, args=(port, desired_caps['udid'],))
-        process.start()
-        atexit.register(clean_up, process)
-
-    spawned_pid = device.spawn([BUNDLE_ID])
-    device.attach(spawned_pid, realm="native")
-    device.resume(spawned_pid)
-    try:
-        from appium.webdriver.common.appiumby import AppiumBy
-        wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Carl" AND name == "Conversation list item"').click()
-        el = driver.find_element(by=AppiumBy.IOS_PREDICATE, value='label == "Message input box"')
-        el.click()
-        el.send_keys("Hello by Appium!")
-        driver.find_element(by=AppiumBy.IOS_PREDICATE, value='label == "Send message button"').click()
-        if driver.is_keyboard_shown():
-            logger.info('keyboard is visible!')
-    except Exception as e:
-        logger.critical(e)
-        logger.critical(driver.page_source)
-    device.kill(spawned_pid)
-
-    if driver:
-        driver.quit()
 
 
 def main():
@@ -150,7 +116,8 @@ def main():
             except IndexError:
                 sys.exit(f'{WDA_CF_BUNDLE_NAME} is not installed!')
 
-    test_appium(device, args.mjpeg)
+    import anfora
+    anfora.main(device, args.mjpeg)
 
 
 if __name__ == '__main__':
