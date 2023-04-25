@@ -1,19 +1,18 @@
 import multiprocessing
 
-from frida.core import Device
+import _frida
 from appium.webdriver.webdriver import WebDriver
+from frida.core import Device, Session, Script
 
-from my_appium import desired_caps, wait_for_element
 from main import SERVER_URL_BASE, BUNDLE_ID, logger
+from my_appium import desired_caps, wait_for_element
 
-global sessions
-sessions = set()
+global paths
+paths = set()
 
 
 def subexperiment(device: Device, driver: WebDriver, msg: str):
     spawned_pid = device.spawn([BUNDLE_ID])
-    device.attach(spawned_pid, realm="native")
-    device.resume(spawned_pid)
     try:
         from appium.webdriver.common.appiumby import AppiumBy
         wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Carl" AND name == "Conversation list item"').click()
@@ -28,12 +27,41 @@ def subexperiment(device: Device, driver: WebDriver, msg: str):
 
 
 def dump():
-    pass
+    """Dump all paths using SCP over SSH."""
+    logger.info(f'paths found: {paths}')
+
+
+def child_gating_closure(device: Device):
+    def on_message(message, data):
+        if message["type"] == "send":
+            for app_group in message["payload"]:
+                paths.add(app_group['path'])
+        else:
+            logger.critical("Unhandled message:", message)
+
+    def _on_child_added(child: _frida.Child):
+        if child.path.startswith("/var/containers/Bundle/Application/") or child.path.startswith("/Application/"):
+            paths.add(child.envp['HOME'])
+            session: Session = device.attach(child.pid, realm="native")
+            session.enable_child_gating()
+            with open('agent/index.ts', 'r') as f:
+                source = f.read()
+            script: Script = session.create_script(name="AnForA", source=source)
+            script.on('message', on_message)
+            script.load()
+            dump()
+        device.resume(child.pid)
+
+    device.on("child-added", _on_child_added)
+    device.attach(1).enable_child_gating()
 
 
 def main(device: Device, port: int = None):
     from appium.options.common import AppiumOptions
     from appium import webdriver
+
+    child_gating_closure(device)
+
     driver: WebDriver = webdriver.Remote(SERVER_URL_BASE, options=AppiumOptions().load_capabilities(desired_caps))
 
     if port is not None:
