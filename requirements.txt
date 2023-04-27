@@ -1,5 +1,5 @@
 Appium-Python-Client
-frida
+frida-tools
 tidevice[openssl]
 paramiko
 mpv
@@ -7,3 +7,5 @@ PyQt5
 PyQt5-stubs
 scp
 git+https://github.com/miticollo/ios-screen-record.git
+pymobiledevice3
+coloredlogs

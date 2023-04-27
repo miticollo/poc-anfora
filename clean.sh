@@ -29,6 +29,10 @@ function temp_files() {
   rm -vrdf "${TMP}"com.apple.test.*
 }
 
+function rm_py_lib_artifacts() {
+  rm -rfv ~/.{pymobiledevice3,tidevice}/
+}
+
 function main() {
   xcrun -k
   derived_data
@@ -36,6 +40,7 @@ function main() {
   temp_files
   rm -vrf ~/Library/MobileDevice/Provisioning\ Profiles
   xcrun -v simctl delete all
+  rm_py_lib_artifacts
 }
 
 main "${@}"
