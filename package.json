@@ -1,5 +1,5 @@
 {
-  "name": "poc-appium",
+  "name": "poc-anfora",
   "version": "1.0.0",
   "description": "PoC for AnForA on iOS devices.",
   "repository": {
@@ -26,12 +26,11 @@
   "homepage": "https://github.com/miticollo/test-appium#readme",
   "dependencies": {
     "@appium/doctor": "^2.0.13",
-    "@types/frida-gum": "^18.1.0",
-    "@types/node": "^18.0.6",
+    "@types/frida-gum": "^18.3.1",
+    "@types/node": "^18.14.0",
     "appium": "^2.0.0-beta.62",
     "appium-xcuitest-driver": "^4.21.25",
-    "frida-compile": "^15.0.8",
-    "mjpeg-consumer": "^2.0.0"
+    "frida-compile": "^16.1.8"
   },
   "config": {
     "XCODE_DIR": "/Applications/Xcode.app/Contents/Developer"

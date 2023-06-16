@@ -3,30 +3,36 @@
 import atexit
 import logging
 import multiprocessing
+import os
+import signal
 import sys
+import time
+from datetime import date
 
+import coloredlogs
 import frida
 import tidevice
+from frida.core import Session, Script, ScriptExportsSync
 
 from mirroring import clean_up
 from my_appium import desired_caps
-from utils import wait_until
+from utils.anfora_utils import wait_until, get_process_wrapper
+from pymobiledevice3.services.installation_proxy import InstallationProxyService
 
-SERVER_URL_BASE = 'http://127.0.0.1:4723'
-BUNDLE_ID = 'com.loki-project.loki-messenger'
-WDA_CF_BUNDLE_NAME = 'WebDriverAgentRunner-Runner'
-EXPERIMENT_NAME = "SampleExperiment"
+WDA_CF_BUNDLE_NAME: str = 'WebDriverAgentRunner-Runner'
+EXPERIMENT_NAME: str = "SampleExperiment"
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("AnForA")
+coloredlogs.install(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
-def parsing():
+def parse_options():
     """Return args parsed."""
+    from utils.argparse_utils import nonempty_string, check_positive, check_team_id, ephemeral_port
     import argparse
-    from utils import nonempty_string, check_positive, check_team_id, ephemeral_port
     parser = argparse.ArgumentParser(description='PoC for AnForA on iOS devices.')
     parser.add_argument('UDID', help='the UDID of the iOS device to test', type=nonempty_string)
+    parser.add_argument('DUMP_PATH', help='output path', type=nonempty_string)
     parser.add_argument('-b', '--bundle-id', metavar='BUNDLE_ID', help='set the bundle identifier of the installed app',
                         type=nonempty_string)
     parser.add_argument('-t', '--timeout', metavar='MINUTES', type=check_positive,
@@ -41,6 +47,10 @@ def parsing():
     group.add_argument('--quicktime', action='store_true', default=False,
                        help='show a mirror of the screen of your iPhone using QuickTime protocol')
     parser.add_argument('-v', '--verbose', action='store_true', default=False)
+    parser.add_argument('--location', type=float, nargs=2, metavar=('LATITUDE', 'LONGITUDE'),
+                        help='provide latitude and longitude coordinates for a simulated location')
+    parser.add_argument('-i', '--install', metavar='IPA_PATH', type=str, help='install a new app')
+    parser.add_argument('-P', '--password', metavar='PASSWORD', type=str, default='alpine', help='mobile\'s password')
     args = parser.parse_args()
     if args.team_id is None and args.bundle_id is not None:
         parser.error('The --bundle-id option requires --team-id.')
@@ -49,8 +59,23 @@ def parsing():
     return args
 
 
+def handler(signum, frame):
+    signame = signal.Signals(signum).name
+    logger.debug(f'Signal handler called with signal {signame} ({signum})')
+    if signum == signal.SIGINT:
+        logger.info('Process terminated by user (Ctrl-C). Exiting with exit code 0.')
+    sys.exit(0)
+
+
+signal.signal(signal.SIGINT, handler)
+signal.signal(signal.SIGTERM, handler)
+
+
 def main():
-    args = parsing()
+    args = parse_options()
+
+    path = os.path.join(args.DUMP_PATH, f'{EXPERIMENT_NAME}_{date.today()}_{time.strftime("%H.%M.%S", time.localtime())}')
+    os.makedirs(path)
 
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
@@ -65,6 +90,9 @@ def main():
         desired_caps['wdaLaunchTimeout'] = args.timeout * 1000 * 60
     if args.bundle_id is not None:
         desired_caps.update({'updatedWDABundleId': args.bundle_id})
+
+    from pymobiledevice3.lockdown import LockdownClient
+    lockdown: LockdownClient = LockdownClient(serial=args.UDID)
 
     if args.quicktime:
         # create a shared event object
@@ -82,14 +110,48 @@ def main():
     t = tidevice.Device(udid=args.UDID)
     t.debug = args.verbose
 
-    desired_caps.update({'platformVersion': t.product_version})
-
     while True:
         try:
             device = frida.get_device(desired_caps['udid'])
             break
         except frida.ProcessNotFoundError:
-            logger.critical('frida.get_device failed. Try again...')
+            logger.warning('frida.get_device failed. Try again...')
+
+    # TODO: A more robust design using a SpringboardService.class.
+    #  More specifically a we need to use a Singleton:
+    #  https://refactoring.guru/design-patterns/singleton/python/example.
+    session: Session = device.attach('Springboard')
+    from anfora.anfora import springboard_ts
+    script: Script = session.create_script(source=springboard_ts)
+    script.load()
+    api: ScriptExportsSync = script.exports_sync
+    api.terminate_all_running_applications()
+    # maybe equals to t.connect_instruments().app_running_processes()?
+    session.detach()
+
+    if args.install:
+        if os.path.isfile(args.install):
+            InstallationProxyService(lockdown=lockdown).install_from_local(args.install)
+            import zipfile
+            with zipfile.ZipFile(args.install) as ipa:
+                info_path: str = [_ for _ in ipa.namelist() if _.startswith('Payload/') and _.endswith('.app/Info.plist')][0]
+                with ipa.open(info_path) as info:
+                    from plistlib import FMT_XML, load
+                    pl = load(info, fmt=FMT_XML)
+                    installed_bundle_id: str = pl["CFBundleIdentifier"]
+            logger.info(f"{installed_bundle_id} installed!")
+        else:
+            logger.critical(f"{args.install} doesn't exist or is not a file!")
+            sys.exit(1)
+
+    desired_caps.update({'platformVersion': t.product_version})
+
+    session = device.attach('Springboard')
+    from anfora.anfora import compiler, AGENT_ROOT_PATH
+    frontboard_ts = compiler.build('frontboard.ts', project_root=AGENT_ROOT_PATH, compression='terser')
+    script = session.create_script(source=frontboard_ts)
+    script.load()
+    atexit.register(lambda: session.detach())
 
     if args.team_id is not None:
         if sys.platform != "darwin":
@@ -111,13 +173,31 @@ def main():
                 bundle_id = [app for app in device.enumerate_applications() if app.name == WDA_CF_BUNDLE_NAME][0].identifier
                 import threading
                 threading.Thread(target=t.xcuitest, args=(bundle_id,), kwargs={}, daemon=True).start()
-                wait_until(lambda: len([proc for proc in frida.get_usb_device().enumerate_processes() if
-                                        proc.name == WDA_CF_BUNDLE_NAME]) > 0)
+                wait_until(get_process_wrapper, device=device, process=WDA_CF_BUNDLE_NAME)
+                time.sleep(2)
             except IndexError:
                 sys.exit(f'{WDA_CF_BUNDLE_NAME} is not installed!')
 
-    import anfora
-    anfora.main(device, args.mjpeg)
+    if args.location:
+        latitude, longitude = args.location
+        logger.info(f'Simulated LATITUDE: {latitude}, Simulated LONGITUDE: {longitude}')
+        from pymobiledevice3.services.simulate_location import DtSimulateLocation
+        DtSimulateLocation(lockdown).set(latitude, longitude)
+        atexit.register(lambda: DtSimulateLocation(lockdown).clear())
+
+    atexit.register(lambda: device.kill(WDA_CF_BUNDLE_NAME) if get_process_wrapper(device, WDA_CF_BUNDLE_NAME) else None)
+
+    try:
+        from anfora import anfora
+        anfora.main(device, t, path, lockdown, args.mjpeg, args.password)
+        if args.install:
+            InstallationProxyService(lockdown=lockdown).uninstall(installed_bundle_id)
+    except Exception:
+        import traceback
+        logger.critical(traceback.format_exc())
+        sys.exit(1)
+
+    sys.exit(0)
 
 
 if __name__ == '__main__':

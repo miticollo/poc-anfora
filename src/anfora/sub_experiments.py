@@ -1,0 +1,179 @@
+import atexit
+import time
+
+import tidevice
+from appium.webdriver.common.appiumby import AppiumBy
+from appium.webdriver.webdriver import WebDriver
+from frida.core import Device
+
+from my_appium import wait_for_element, wait_for_element_or_none, wait_until_element_is_invisible, wait_for_elements
+
+
+def _spawn_by_tidevice(t: tidevice.Device, bundle_id: str):
+    from tidevice import ServiceError
+    try:
+        with t.connect_instruments() as ts:
+            pid = ts.app_launch(bundle_id)
+            return pid
+    except ServiceError:
+        raise
+
+
+def new_contact_on_telegram(device: Device, t: tidevice.Device, driver: WebDriver, bundle_id: str):
+    """Create a new contact using Telegram UI."""
+    spawned_pid = _spawn_by_tidevice(t, bundle_id)
+    atexit.register(lambda: device.kill(spawned_pid))
+    try:
+        el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'label == "OK"')
+        if el is not None: # Not supported by action parser
+            # Telegram has just installed!
+            el.click()
+        wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Contatti"').click()
+        wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Aggiungi contatto"').click()
+        el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'label == "OK"')
+        if el is not None: # Not supported by action parser
+            el.click()
+            wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Aggiungi contatto"').click()
+        driver.tap([(177, 248)], 500)  # focus
+        from selenium.webdriver.common.action_chains import ActionChains
+        actions: ActionChains = ActionChains(driver)
+        for digit in '393337526902':
+            actions.w3c_actions.key_action.key_down(digit).key_up(digit).pause(300 / 1000)
+            actions.perform()
+        driver.tap([(237, 131)], 500)
+        for letter in 'Mario':
+            actions.w3c_actions.key_action.key_down(letter).key_up(letter).pause(300 / 1000)
+            actions.perform()
+        driver.tap([(190, 179)], 500)
+        for letter in 'Rossi':
+            actions.w3c_actions.key_action.key_down(letter).key_up(letter).pause(300 / 1000)
+            actions.perform()
+        wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Crea"').click()
+        # We don't want to close Telegram during contact creation!
+        wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Chiudi"').click()
+    except Exception:
+        raise
+    finally:
+        device.kill(spawned_pid)
+
+
+def new_contact_on_tamtam(device: Device, t: tidevice.Device, driver: WebDriver, bundle_id: str):
+    """Create a new contact in TamTam using ContactUI."""
+    spawned_pid = _spawn_by_tidevice(t, bundle_id)
+    atexit.register(lambda: device.kill(spawned_pid))
+    try:
+        el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'label == "OK"')
+        if el is not None: # Not supported by action parser
+            el.click()
+        el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'label == "OK"')
+        if el is not None:  # Not supported by action parser
+            el.click()
+        el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'label == "Consenti"')
+        if el is not None:  # Not supported by action parser
+            el.click()
+        wait_for_element(driver, AppiumBy.IOS_CLASS_CHAIN,
+                         '**/XCUIElementTypeTabBar[`label == "Barra pannelli"`]/XCUIElementTypeButton[1]').click()
+        wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "ic add 24"').click()
+        time.sleep(2)
+        wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Crea contatto"').click()
+        wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Nome"').send_keys('Luigi')
+        wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'name == "Cognome"').send_keys('Rossi')
+        driver.swipe(281, 417, 281, 312)
+        time.sleep(2)
+        wait_for_element(driver, AppiumBy.IOS_PREDICATE,
+                         'label == "aggiungi telefono" AND name == "aggiungi telefono" AND type == "XCUIElementTypeCell"').click()
+        wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'name == "cellulare" AND value == "Telefono"').send_keys(
+            '+393337526902')
+        driver.tap([(341, 82)], 500)
+        el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE,
+                                      'label == "Annulla" AND name == "Annulla" AND value == "Annulla"')
+        if el is not None: # Not supported by action parser
+            el.click()
+    except Exception:
+        raise
+    finally:
+        device.kill(spawned_pid)
+
+
+def chain_of_apps(device: Device, t: tidevice.Device, driver: WebDriver, bundle_id: str):
+    """
+    Send the current location and a message to a conversation in the TamTam app.
+
+    Then open three apps in this order:
+        1. Safari in-app
+        2. App Store
+        3. app-share-extension
+    """
+    spawned_pid = _spawn_by_tidevice(t, bundle_id)
+    atexit.register(lambda: device.kill(spawned_pid))
+    try:
+        el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'label == "OK"')
+        if el is not None:  # Not supported by action parser
+            el.click()
+        el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'label == "OK"')
+        if el is not None:  # Not supported by action parser
+            el.click()
+        el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'label == "Consenti"')
+        if el is not None:  # Not supported by action parser
+            el.click()
+        wait_for_element(driver, AppiumBy.IOS_CLASS_CHAIN,
+                         '**/XCUIElementTypeTable[`name == "OKM_CHATS_TABLE"`]/XCUIElementTypeCell[1]').click()
+        time.sleep(2)
+        el = wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "chat attach"')
+        el.click()
+        el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'label == "Consenti l\'accesso a tutte le foto"')
+        if el is not None: # Not supported by action parser
+            el.click()
+        el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'label == "OK"')
+        if el is not None: # Not supported by action parser
+            el.click()
+        driver.find_element(by=AppiumBy.IOS_PREDICATE,
+                            value='label == "Luogo" AND name == "Luogo" AND type == "XCUIElementTypeButton"').click()
+        el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'label == "Consenti quando utilizzi l\'app"')
+        if el is not None: # Not supported by action parser
+            el.click()
+        time.sleep(5)
+        driver.find_element(by=AppiumBy.IOS_PREDICATE, value='label == "Invia posizione"').click()
+        el = driver.find_element(by=AppiumBy.IOS_PREDICATE, value='name == "input_textview"')
+        el.click()
+        el.send_keys('Hey! 👋 Do you know momentoph.com?')
+        driver.find_element(by=AppiumBy.IOS_PREDICATE, value='label == "ic send 24"').click()
+        time.sleep(2)
+        wait_for_element(driver, AppiumBy.IOS_CLASS_CHAIN,
+                         '**/XCUIElementTypeOther[`label == "Hey! 👋 Do you know momentoph.com?"`][1]').click()
+        wait_for_element(driver, AppiumBy.IOS_CLASS_CHAIN,
+                         '**/XCUIElementTypeOther[`label == "momento. | La nuova app per trovare fotografi"`]/XCUIElementTypeOther[5]/XCUIElementTypeLink').click()
+        time.sleep(5)
+        el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'label == "Consenti quando utilizzi l\'app"')
+        if el is not None:  # Not supported by action parser
+            el.click()
+        share_btn = wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Condividi"')
+        share_btn.click()
+        wait_for_element(driver, AppiumBy.IOS_CLASS_CHAIN,
+                         '**/XCUIElementTypeCell[`label == "Viber"`]/XCUIElementTypeOther/XCUIElementTypeOther[2]').click()
+        wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Cerca" AND name == "Cerca"').send_keys('Carl')
+        contacts = wait_for_elements(driver, AppiumBy.IOS_PREDICATE, 'label == "Carl" AND name == "Carl" AND value == "Carl"')
+        contacts[-1].click()
+        wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Sì"').click()
+        wait_until_element_is_invisible(driver, share_btn)
+    except Exception:
+        raise
+    finally:
+        device.kill(spawned_pid)
+
+
+def open_signal(device: Device, t: tidevice.Device, driver: WebDriver, bundle_id: str):
+    """
+    Open Signal to report network privacy configuration.
+    """
+    spawned_pid = _spawn_by_tidevice(t, bundle_id)
+    atexit.register(lambda: device.kill(spawned_pid))
+    try:
+        wait_for_element(driver, AppiumBy.IOS_CLASS_CHAIN,
+                         '**/XCUIElementTypeAlert[`label == "“Signal” vorrebbe inviarti delle notifiche"`]/XCUIElementTypeOther/XCUIElementTypeOther/XCUIElementTypeOther[2]/XCUIElementTypeScrollView[1]/XCUIElementTypeOther[1]')
+        wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Consenti"').click()
+        wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Consenti"').click()
+    except Exception:
+        raise
+    finally:
+        device.kill(spawned_pid)

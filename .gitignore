@@ -466,3 +466,5 @@ pip-selfcheck.json
 /embedded.mobileprovision
 gist/*
 *.ipa
+!src/anfora/agent/*
+!src/anfora/agent

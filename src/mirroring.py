@@ -6,7 +6,7 @@ from ioscreen.util import init_logger, find_ios_device, record_gstreamer, iPhone
 # define a function to terminate process
 def clean_up(process: multiprocessing.Process):
     if process is not None and process.is_alive():
-        process.terminate()
+        process.kill()
 
 
 def mirroring_quicktime(udid: str, event: multiprocessing.Event, verbosity: bool):
