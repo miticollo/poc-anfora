@@ -14,7 +14,6 @@ import frida
 import paramiko
 import tidevice
 from frida.core import Device, Session, Script, ScriptExportsSync
-from pymobiledevice3.lockdown import LockdownClient
 
 from anfora.snapshots import do_create, do_delete, do_mount, do_unmount, do_rsync
 from anfora.sub_experiments import open_signal
@@ -218,7 +217,7 @@ def reset_to_cleanup_backup(api: ScriptExportsSync, client: paramiko.SSHClient, 
         rsync_paths.clear()
 
 
-def main(device: Device, t: tidevice.Device, path: str, lockdown: LockdownClient, mjpeg_port: int = None,
+def main(device: Device, t: tidevice.Device, path: str, lockdown, mjpeg_port: int = None,
          password: str = 'alpine'):
     from appium.webdriver.webdriver import WebDriver
     from appium import webdriver

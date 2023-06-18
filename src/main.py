@@ -91,8 +91,8 @@ def main():
     if args.bundle_id is not None:
         desired_caps.update({'updatedWDABundleId': args.bundle_id})
 
-    from pymobiledevice3.lockdown import LockdownClient
-    lockdown: LockdownClient = LockdownClient(serial=args.UDID)
+    from pymobiledevice3.lockdown import create_using_usbmux
+    lockdown = create_using_usbmux(serial=args.UDID)
 
     if args.quicktime:
         # create a shared event object

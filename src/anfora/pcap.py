@@ -2,11 +2,10 @@ import os
 import struct
 import threading
 
-from pymobiledevice3.lockdown import LockdownClient
 from pymobiledevice3.services.pcapd import PcapdService, PCAP_HEADER, PACKET_HEADER
 
 
-def pcap(lockdown: LockdownClient, name: str, parent_path: str, stop_event: threading.Event):
+def pcap(lockdown, name: str, parent_path: str, stop_event: threading.Event):
     """ sniff device traffic """
 
     def write_to_pcap(out, packet_generator):
