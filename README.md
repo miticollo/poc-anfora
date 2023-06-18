@@ -1,18 +1,5 @@
 # PoC AnForA
 
-> **Note**<br/>
-> Disk Developer Image is not required.
-> Because Appium automatically mount it.
-
-To run the WDA app, it is necessary to trust your developer account by going to `Settings` > `General` > `Device Management` (or `Profiles` on some iDevices).
-To ensure success, it is important to do this quickly, preferably after the app is installed, but before the compilation finishes.
-If you do not complete this step in time, the script will fail. 
-If you prefer, you can sideload the [blank-app](https://github.com/miticollo/blank-app/releases/latest) using the same account that you will use for the WDA app. 
-This will allow you to trust the developer account without any time-related issues.
-
-## Requirements
-- [Session](https://getsession.org/iphone) with at least one chat.
-
 ## How to run
 
 If you don't have a macOS, you can follow [below instructions](#other-oss).
@@ -54,7 +41,6 @@ When you have finished and your macOS container is ready, you can follow these s
 7. <span id="team-id"></span>
    In another terminal window, execute the following Python script:
    <span><!-- https://appium.github.io/appium/docs/en/2.0/quickstart/test-py/ --></span>
-   <span><!-- python ./test.py "$(idevice_id -l)" "$(ideviceinfo -k ProductVersion)" -b 'it.uniupo.dsdf.WebDriverAgentRunner' --team-id 'MS523TRG78' --></span>
    ```shell
    python  ./test.py [-h] [-b BUNDLE_ID] [-t MINUTES] [--team-id TEAM_ID] [-p PORT] [-m] [-v] UDID IOS_VERSION
    ```
@@ -79,7 +65,6 @@ When you have finished and your macOS container is ready, you can follow these s
 ## Tested Devices and iOS Versions
 
 - iPhone X: iOS 16.3.1
-- iPhone SE 2020: iOS 14.4.2
 
 ## Other OSs
 

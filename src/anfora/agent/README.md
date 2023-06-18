@@ -101,7 +101,7 @@ I feel that it also stops the update from happening if the device is jailbroken.
 
 ## `/System/Library/LaunchDaemons/com.apple.tccd.plist`
 
-Total and Complete Control -TCC’s background service is `tccd`, whose only documented control is in `tccutil`on macOS, which merely clears existing settings from lists in the Privacy tab of the Security & Privacy pane.
+Total and Complete Control -TCC’s background service is `tccd`, whose only documented control is in `tccutil` on macOS, which merely clears existing settings from lists in the Privacy tab of the Security & Privacy pane.
 Its front end is that Privacy tab. 
 In the unified log, TCC’s entries come from the subsystem com.apple.TCC.
 
