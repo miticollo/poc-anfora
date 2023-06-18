@@ -14,13 +14,13 @@ When you have finished and your macOS container is ready, you can follow these s
    ```
 2. Clone this project
    ```shell
-   git clone --depth=1 -j8 https://github.com/miticollo/test-appium.git
-   cd test-appium
+   git clone --depth=1 -j8 https://github.com/miticollo/poc-anfora.git
+   cd poc-anfora
    ```
 3. Download NodeJS dependencies
    <span><!-- https://appium.github.io/appium/docs/en/latest/quickstart/install/ --></span>
    ```shell
-   npm --ddd install
+   npm -ddd install
    ```
 4. Download Python dependencies
    <span><!-- https://stackoverflow.com/a/15593865 --></span>
