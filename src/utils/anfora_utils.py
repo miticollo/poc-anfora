@@ -1,7 +1,22 @@
 import time
 from typing import Optional
 
-from frida.core import Device
+from frida.core import Device, Session, Script, ScriptExportsSync
+from pymobiledevice3.services.simulate_location import DtSimulateLocation
+
+
+def clear_location(lockdown, device: Device):
+    """Reset location and time."""
+    DtSimulateLocation(lockdown).clear()
+    session: Session = device.attach('Springboard')
+    from anfora.anfora import springboard_ts
+    script: Script = session.create_script(source=springboard_ts)
+    script.load()
+    api: ScriptExportsSync = script.exports_sync
+    api.toggle_airplane_mode()
+    time.sleep(5)
+    api.toggle_airplane_mode()
+    session.detach()
 
 
 def find_available_port_in_range(start, end) -> Optional[int]:

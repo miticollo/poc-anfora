@@ -13,11 +13,11 @@ import coloredlogs
 import frida
 import tidevice
 from frida.core import Session, Script, ScriptExportsSync
+from pymobiledevice3.services.installation_proxy import InstallationProxyService
 
 from mirroring import clean_up
 from my_appium import desired_caps
-from utils.anfora_utils import wait_until, get_process_wrapper
-from pymobiledevice3.services.installation_proxy import InstallationProxyService
+from utils.anfora_utils import get_process_wrapper, clear_location
 
 WDA_CF_BUNDLE_NAME: str = 'WebDriverAgentRunner-Runner'
 EXPERIMENT_NAME: str = "SampleExperiment"
@@ -40,7 +40,8 @@ def parse_options():
     parser.add_argument('--team-id', metavar='TEAM_ID', type=check_team_id,
                         help='set the 10-character team identifier for your Apple developer account')
     parser.add_argument('-p', '--port', metavar='PORT', type=ephemeral_port, default=8100,
-                        help='it will be used to forward traffic from this host to real iOS devices over USB')
+                        help='it will be used (by WDA app) to forward traffic from this host to real iOS devices over '
+                             'USB')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--mjpeg', metavar='PORT', type=ephemeral_port, default=None, nargs='?', const=9100,
                        help='show a mirror of the screen of your iPhone using WDA MJPEG Server')
@@ -93,6 +94,7 @@ def main():
 
     from pymobiledevice3.lockdown import create_using_usbmux
     lockdown = create_using_usbmux(serial=args.UDID)
+    atexit.register(lockdown.close)
 
     if args.quicktime:
         # create a shared event object
@@ -107,8 +109,7 @@ def main():
         # wait for the event to be set
         event.wait()
 
-    t = tidevice.Device(udid=args.UDID)
-    t.debug = args.verbose
+    desired_caps.update({'platformVersion': lockdown.product_version})
 
     while True:
         try:
@@ -144,8 +145,6 @@ def main():
             logger.critical(f"{args.install} doesn't exist or is not a file!")
             sys.exit(1)
 
-    desired_caps.update({'platformVersion': t.product_version})
-
     session = device.attach('Springboard')
     from anfora.anfora import compiler, AGENT_ROOT_PATH
     frontboard_ts = compiler.build('frontboard.ts', project_root=AGENT_ROOT_PATH, compression='terser')
@@ -166,15 +165,17 @@ def main():
             device.get_process(WDA_CF_BUNDLE_NAME)
         except frida.ProcessNotFoundError:
             try:
+                # TODO: a more robust solution using a custom approach + pymobiledevice3
+                d = tidevice.Device(udid=args.UDID)
+                d.debug = args.verbose
+                d.mount_developer_image()
+                del d
+                bundle_id = [app for app in device.enumerate_applications() if app.name == WDA_CF_BUNDLE_NAME][0].identifier
                 desired_caps.update({
                     'useSimpleBuildTest': False,
-                    'usePrebuiltWDA': True,
+                    'usePreinstalledWDA': True,
+                    'updatedWDABundleId': bundle_id.replace('.xctrunner', ''),
                 })
-                bundle_id = [app for app in device.enumerate_applications() if app.name == WDA_CF_BUNDLE_NAME][0].identifier
-                import threading
-                threading.Thread(target=t.xcuitest, args=(bundle_id,), kwargs={}, daemon=True).start()
-                wait_until(get_process_wrapper, device=device, process=WDA_CF_BUNDLE_NAME)
-                time.sleep(2)
             except IndexError:
                 sys.exit(f'{WDA_CF_BUNDLE_NAME} is not installed!')
 
@@ -183,13 +184,13 @@ def main():
         logger.info(f'Simulated LATITUDE: {latitude}, Simulated LONGITUDE: {longitude}')
         from pymobiledevice3.services.simulate_location import DtSimulateLocation
         DtSimulateLocation(lockdown).set(latitude, longitude)
-        atexit.register(lambda: DtSimulateLocation(lockdown).clear())
+        atexit.register(clear_location, lockdown, device)
 
     atexit.register(lambda: device.kill(WDA_CF_BUNDLE_NAME) if get_process_wrapper(device, WDA_CF_BUNDLE_NAME) else None)
 
     try:
         from anfora import anfora
-        anfora.main(device, t, path, lockdown, args.mjpeg, args.password)
+        anfora.main(device, path, lockdown, desired_caps['udid'], args.mjpeg, args.password)
         if args.install:
             InstallationProxyService(lockdown=lockdown).uninstall(installed_bundle_id)
     except Exception:

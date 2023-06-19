@@ -1,27 +1,23 @@
 import atexit
 import time
 
-import tidevice
 from appium.webdriver.common.appiumby import AppiumBy
 from appium.webdriver.webdriver import WebDriver
 from frida.core import Device
+from pymobiledevice3.services.dvt.dvt_secure_socket_proxy import DvtSecureSocketProxyService
+from pymobiledevice3.services.dvt.instruments.process_control import ProcessControl
 
 from my_appium import wait_for_element, wait_for_element_or_none, wait_until_element_is_invisible, wait_for_elements
 
 
-def _spawn_by_tidevice(t: tidevice.Device, bundle_id: str):
-    from tidevice import ServiceError
-    try:
-        with t.connect_instruments() as ts:
-            pid = ts.app_launch(bundle_id)
-            return pid
-    except ServiceError:
-        raise
+def _spawn_by_pymobiledevice(lockdown, bundle_id: str) -> int:
+    with DvtSecureSocketProxyService(lockdown=lockdown) as dvt:
+        return ProcessControl(dvt).launch(bundle_id=bundle_id, kill_existing=True)
 
 
-def new_contact_on_telegram(device: Device, t: tidevice.Device, driver: WebDriver, bundle_id: str):
+def new_contact_on_telegram(device: Device, lockdown, driver: WebDriver, bundle_id: str):
     """Create a new contact using Telegram UI."""
-    spawned_pid = _spawn_by_tidevice(t, bundle_id)
+    spawned_pid = _spawn_by_pymobiledevice(lockdown, bundle_id)
     atexit.register(lambda: device.kill(spawned_pid))
     try:
         el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'label == "OK"')
@@ -57,9 +53,9 @@ def new_contact_on_telegram(device: Device, t: tidevice.Device, driver: WebDrive
         device.kill(spawned_pid)
 
 
-def new_contact_on_tamtam(device: Device, t: tidevice.Device, driver: WebDriver, bundle_id: str):
+def new_contact_on_tamtam(device: Device, lockdown, driver: WebDriver, bundle_id: str):
     """Create a new contact in TamTam using ContactUI."""
-    spawned_pid = _spawn_by_tidevice(t, bundle_id)
+    spawned_pid = _spawn_by_pymobiledevice(lockdown, bundle_id)
     atexit.register(lambda: device.kill(spawned_pid))
     try:
         el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'label == "OK"')
@@ -95,7 +91,7 @@ def new_contact_on_tamtam(device: Device, t: tidevice.Device, driver: WebDriver,
         device.kill(spawned_pid)
 
 
-def chain_of_apps(device: Device, t: tidevice.Device, driver: WebDriver, bundle_id: str):
+def chain_of_apps(device: Device, lockdown, driver: WebDriver, bundle_id: str):
     """
     Send the current location and a message to a conversation in the TamTam app.
 
@@ -104,7 +100,7 @@ def chain_of_apps(device: Device, t: tidevice.Device, driver: WebDriver, bundle_
         2. App Store
         3. app-share-extension
     """
-    spawned_pid = _spawn_by_tidevice(t, bundle_id)
+    spawned_pid = _spawn_by_pymobiledevice(lockdown, bundle_id)
     atexit.register(lambda: device.kill(spawned_pid))
     try:
         el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'label == "OK"')
@@ -162,11 +158,11 @@ def chain_of_apps(device: Device, t: tidevice.Device, driver: WebDriver, bundle_
         device.kill(spawned_pid)
 
 
-def open_signal(device: Device, t: tidevice.Device, driver: WebDriver, bundle_id: str):
+def open_signal(device: Device, lockdown, driver: WebDriver, bundle_id: str):
     """
     Open Signal to report network privacy configuration.
     """
-    spawned_pid = _spawn_by_tidevice(t, bundle_id)
+    spawned_pid = _spawn_by_pymobiledevice(lockdown, bundle_id)
     atexit.register(lambda: device.kill(spawned_pid))
     try:
         wait_for_element(driver, AppiumBy.IOS_CLASS_CHAIN,

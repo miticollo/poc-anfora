@@ -1,6 +1,9 @@
+import atexit
 import multiprocessing
 
 from ioscreen.util import init_logger, find_ios_device, record_gstreamer, iPhoneModels
+from pymobiledevice3.lockdown import create_using_usbmux
+from pymobiledevice3.tcp_forwarder import TcpForwarder
 
 
 # define a function to terminate process
@@ -18,14 +21,12 @@ def mirroring_quicktime(udid: str, event: multiprocessing.Event, verbosity: bool
 
 def mirroring_mjpeg(port: int, udid: str):
     import mpv
-    import tidevice
     import threading
-    from tidevice._relay import relay
 
     from PyQt5.QtWidgets import QMainWindow, QWidget, QApplication
     from PyQt5.QtCore import Qt
 
-    d = tidevice.Device(udid=udid)
+    d = create_using_usbmux(serial=udid)
 
     class Test(QMainWindow):
 
@@ -46,7 +47,9 @@ def mirroring_mjpeg(port: int, udid: str):
 
     app = QApplication([])
 
-    threading.Thread(target=relay, args=(d, port, port,), kwargs={}, daemon=True).start()
+    forwarder = TcpForwarder(port, port, serial=udid)
+    threading.Thread(target=forwarder.start, args=(), kwargs={}, daemon=True).start()
+    atexit.register(forwarder.stop)
 
     import locale
 

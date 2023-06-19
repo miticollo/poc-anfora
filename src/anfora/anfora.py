@@ -12,8 +12,8 @@ import threading
 import _frida
 import frida
 import paramiko
-import tidevice
 from frida.core import Device, Session, Script, ScriptExportsSync
+from pymobiledevice3.tcp_forwarder import TcpForwarder
 
 from anfora.snapshots import do_create, do_delete, do_mount, do_unmount, do_rsync
 from anfora.sub_experiments import open_signal
@@ -44,12 +44,14 @@ def reset_iphone(api: ScriptExportsSync):
     internal_identifiers.clear()
 
 
-def kill_all_processes(device: Device, spawn_thread: threading.Thread, pcap_thread: threading.Thread, stop_event: threading.Event):
+def kill_all_processes(device: Device, spawn_thread: threading.Thread, pcap_thread: threading.Thread | None, stop_event: threading.Event):
     stop_event.set()
     if spawn_thread.is_alive():
         spawn_thread.join()
-    if pcap_thread.is_alive():
+    logger.info('spawn_thread stopped!')
+    if pcap_thread is not None and pcap_thread.is_alive():
         pcap_thread.join()
+    logger.info('pcap_thread stopped!')
     for pid in pids:
         device.kill(pid)
         logger.info(f'Killed {pid}!')
@@ -217,13 +219,11 @@ def reset_to_cleanup_backup(api: ScriptExportsSync, client: paramiko.SSHClient, 
         rsync_paths.clear()
 
 
-def main(device: Device, t: tidevice.Device, path: str, lockdown, mjpeg_port: int = None,
-         password: str = 'alpine'):
+def main(device: Device, path: str, lockdown, udid: str, mjpeg_port: int = None, password: str = 'alpine'):
     from appium.webdriver.webdriver import WebDriver
     from appium import webdriver
     from my_appium import SERVER_URL_BASE, desired_caps
     from utils.anfora_utils import find_available_port_in_range
-    from tidevice._relay import relay
 
     session: Session = device.attach('Springboard')
     script: Script = session.create_script(source=springboard_ts)
@@ -233,7 +233,10 @@ def main(device: Device, t: tidevice.Device, path: str, lockdown, mjpeg_port: in
     reset_iphone(api)
 
     port: int = find_available_port_in_range(1025, 40000)
-    threading.Thread(target=relay, args=(t, port, 22,), kwargs={}, daemon=True).start()
+
+    forwarder = TcpForwarder(port, 22, serial=udid)
+    threading.Thread(target=forwarder.start, args=(), kwargs={}, daemon=True).start()
+    atexit.register(forwarder.stop)
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.WarningPolicy())
     logger.info(f'SSH connection over USB using port-forwarding localhost:{port}')
@@ -261,7 +264,7 @@ def main(device: Device, t: tidevice.Device, path: str, lockdown, mjpeg_port: in
     atexit.register(session.detach)
     atexit.register(reset_to_cleanup_backup, api, client, password)
     atexit.register(api.terminate_all_running_applications)
-    atexit.register(kill_all_processes, device, spawn_thread, stop_event)
+    atexit.register(kill_all_processes, device, spawn_thread, None, stop_event)
 
     from anfora.sub_experiments import new_contact_on_telegram, new_contact_on_tamtam, chain_of_apps
 
@@ -283,7 +286,7 @@ def main(device: Device, t: tidevice.Device, path: str, lockdown, mjpeg_port: in
     pcap_thread: threading.Thread = threading.Thread(target=pcap,
                                                      args=(lockdown, sub_experiment_name, path, stop_event,), kwargs={})
     pcap_thread.start()
-    new_contact_on_telegram(device, t, driver, 'ph.telegra.Telegraph')
+    new_contact_on_telegram(device, lockdown, driver, 'ph.telegra.Telegraph')
     kill_all_processes(device, spawn_thread, pcap_thread, stop_event)
 
     dump(client, sub_experiment_name, path, password)
@@ -306,7 +309,7 @@ def main(device: Device, t: tidevice.Device, path: str, lockdown, mjpeg_port: in
     pcap_thread: threading.Thread = threading.Thread(target=pcap,
                                                      args=(lockdown, sub_experiment_name, path, stop_event,), kwargs={})
     pcap_thread.start()
-    new_contact_on_tamtam(device, t, driver, 'ru.odnoklassniki.messenger')
+    new_contact_on_tamtam(device, lockdown, driver, 'ru.odnoklassniki.messenger')
     kill_all_processes(device, spawn_thread, pcap_thread, stop_event)
 
     dump(client, sub_experiment_name, path, password)
@@ -331,7 +334,7 @@ def main(device: Device, t: tidevice.Device, path: str, lockdown, mjpeg_port: in
     pcap_thread: threading.Thread = threading.Thread(target=pcap,
                                                      args=(lockdown, sub_experiment_name, path, stop_event,), kwargs={})
     pcap_thread.start()
-    chain_of_apps(device, t, driver, 'ru.odnoklassniki.messenger')
+    chain_of_apps(device, lockdown, driver, 'ru.odnoklassniki.messenger')
     kill_all_processes(device, spawn_thread, pcap_thread, stop_event)
 
     dump(client, sub_experiment_name, path, password)
@@ -354,7 +357,7 @@ def main(device: Device, t: tidevice.Device, path: str, lockdown, mjpeg_port: in
     pcap_thread: threading.Thread = threading.Thread(target=pcap,
                                                      args=(lockdown, sub_experiment_name, path, stop_event,), kwargs={})
     pcap_thread.start()
-    open_signal(device, t, driver, 'org.whispersystems.signal')
+    open_signal(device, lockdown, driver, 'org.whispersystems.signal')
     kill_all_processes(device, spawn_thread, pcap_thread, stop_event)
 
     dump(client, sub_experiment_name, path, password)
