@@ -8,17 +8,21 @@ import sys
 import tarfile
 import tempfile
 import threading
+from typing import Optional
 
 import _frida
 import frida
 import paramiko
 from frida.core import Device, Session, Script, ScriptExportsSync
 from pymobiledevice3.tcp_forwarder import TcpForwarder
+from appium.webdriver.webdriver import WebDriver
 
 from anfora.snapshots import do_create, do_delete, do_mount, do_unmount, do_rsync
 from anfora.sub_experiments import open_signal
 
 logger = logging.getLogger(__name__)
+
+driver: WebDriver
 
 dump_paths: set = set()
 rsync_paths: set = set()
@@ -44,7 +48,7 @@ def reset_iphone(api: ScriptExportsSync):
     internal_identifiers.clear()
 
 
-def kill_all_processes(device: Device, spawn_thread: threading.Thread, pcap_thread: threading.Thread | None, stop_event: threading.Event):
+def kill_all_processes(device: Device, spawn_thread: threading.Thread, pcap_thread: Optional[threading.Thread], stop_event: threading.Event):
     stop_event.set()
     if spawn_thread.is_alive():
         spawn_thread.join()
@@ -219,10 +223,19 @@ def reset_to_cleanup_backup(api: ScriptExportsSync, client: paramiko.SSHClient, 
         rsync_paths.clear()
 
 
-def main(device: Device, path: str, lockdown, udid: str, mjpeg_port: int = None, password: str = 'alpine'):
-    from appium.webdriver.webdriver import WebDriver
+def init_driver():
     from appium import webdriver
     from my_appium import SERVER_URL_BASE, desired_caps
+
+    # To install the WDA app on iOS 16.4+ Xcode 14.3+ is required.
+    # Anyway, this version is not suitable for iOS 12 and 13.
+    # As reported here: https://stackoverflow.com/q/76156478
+    global driver
+    driver = webdriver.Remote(SERVER_URL_BASE, desired_capabilities=desired_caps)
+    atexit.register(lambda: driver.quit() if driver else None)
+
+
+def main(device: Device, path: str, lockdown, udid: str, password: str = 'alpine'):
     from utils.anfora_utils import find_available_port_in_range
 
     session: Session = device.attach('Springboard')
@@ -241,20 +254,6 @@ def main(device: Device, path: str, lockdown, udid: str, mjpeg_port: int = None,
     client.set_missing_host_key_policy(paramiko.WarningPolicy())
     logger.info(f'SSH connection over USB using port-forwarding localhost:{port}')
     client.connect('localhost', port=port, username='mobile', password=password)
-
-    # To install the WDA app on iOS 16.4+ Xcode 14.3+ is required.
-    # Anyway, this version is not suitable for iOS 12 and 13.
-    # As reported here: https://stackoverflow.com/q/76156478
-    driver: WebDriver = webdriver.Remote(SERVER_URL_BASE, desired_capabilities=desired_caps)
-    atexit.register(lambda: driver.quit() if driver else None)
-
-    if mjpeg_port is not None:
-        from mirroring import mirroring_mjpeg
-        import multiprocessing
-        process = multiprocessing.Process(target=mirroring_mjpeg, args=(mjpeg_port, desired_caps['udid'],))
-        process.start()
-        from mirroring import clean_up
-        atexit.register(clean_up, process)
 
     stop_event: threading.Event = threading.Event()
     from anfora.spawn_thread import spawn_thread_closure

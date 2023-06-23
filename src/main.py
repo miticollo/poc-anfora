@@ -15,7 +15,7 @@ import tidevice
 from frida.core import Session, Script, ScriptExportsSync
 from pymobiledevice3.services.installation_proxy import InstallationProxyService
 
-from mirroring import clean_up
+from mirroring import clean_up, mirroring_mjpeg
 from my_appium import desired_caps
 from utils.anfora_utils import get_process_wrapper, clear_location
 
@@ -75,26 +75,9 @@ signal.signal(signal.SIGTERM, handler)
 def main():
     args = parse_options()
 
-    path = os.path.join(args.DUMP_PATH, f'{EXPERIMENT_NAME}_{date.today()}_{time.strftime("%H.%M.%S", time.localtime())}')
-    os.makedirs(path)
-
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
         desired_caps.update({'showIOSLog': True})
-
-    desired_caps.update({
-        'udid': args.UDID,
-        'wdaLocalPort': args.port,
-    })
-
-    if args.timeout is not None:
-        desired_caps['wdaLaunchTimeout'] = args.timeout * 1000 * 60
-    if args.bundle_id is not None:
-        desired_caps.update({'updatedWDABundleId': args.bundle_id})
-
-    from pymobiledevice3.lockdown import create_using_usbmux
-    lockdown = create_using_usbmux(serial=args.UDID)
-    atexit.register(lockdown.close)
 
     if args.quicktime:
         # create a shared event object
@@ -102,18 +85,16 @@ def main():
         # create a process
         from mirroring import mirroring_quicktime
         process = multiprocessing.Process(target=mirroring_quicktime,
-                                          args=(desired_caps['udid'].replace('-', ''), event, args.verbose))
+                                          args=(args.UDID.replace('-', ''), event, args.verbose))
         # run the new process
         process.start()
         atexit.register(clean_up, process)
         # wait for the event to be set
         event.wait()
 
-    desired_caps.update({'platformVersion': lockdown.product_version})
-
     while True:
         try:
-            device = frida.get_device(desired_caps['udid'])
+            device = frida.get_device(args.UDID)
             break
         except frida.ProcessNotFoundError:
             logger.warning('frida.get_device failed. Try again...')
@@ -130,27 +111,21 @@ def main():
     # maybe equals to t.connect_instruments().app_running_processes()?
     session.detach()
 
-    if args.install:
-        if os.path.isfile(args.install):
-            InstallationProxyService(lockdown=lockdown).install_from_local(args.install)
-            import zipfile
-            with zipfile.ZipFile(args.install) as ipa:
-                info_path: str = [_ for _ in ipa.namelist() if _.startswith('Payload/') and _.endswith('.app/Info.plist')][0]
-                with ipa.open(info_path) as info:
-                    from plistlib import FMT_XML, load
-                    pl = load(info, fmt=FMT_XML)
-                    installed_bundle_id: str = pl["CFBundleIdentifier"]
-            logger.info(f"{installed_bundle_id} installed!")
-        else:
-            logger.critical(f"{args.install} doesn't exist or is not a file!")
-            sys.exit(1)
+    desired_caps.update({
+        'udid': args.UDID,
+        'wdaLocalPort': args.port,
+    })
 
-    session = device.attach('Springboard')
-    from anfora.anfora import compiler, AGENT_ROOT_PATH
-    frontboard_ts = compiler.build('frontboard.ts', project_root=AGENT_ROOT_PATH, compression='terser')
-    script = session.create_script(source=frontboard_ts)
-    script.load()
-    atexit.register(lambda: session.detach())
+    if args.timeout is not None:
+        desired_caps['wdaLaunchTimeout'] = args.timeout * 1000 * 60
+    if args.bundle_id is not None:
+        desired_caps.update({'updatedWDABundleId': args.bundle_id})
+
+    from pymobiledevice3.lockdown import create_using_usbmux
+    lockdown = create_using_usbmux(serial=args.UDID)
+    atexit.register(lockdown.close)
+
+    desired_caps.update({'platformVersion': lockdown.product_version})
 
     if args.team_id is not None:
         if sys.platform != "darwin":
@@ -179,6 +154,38 @@ def main():
             except IndexError:
                 sys.exit(f'{WDA_CF_BUNDLE_NAME} is not installed!')
 
+    session = device.attach('Springboard')
+    from anfora.anfora import compiler, AGENT_ROOT_PATH
+    frontboard_ts = compiler.build('frontboard.ts', project_root=AGENT_ROOT_PATH, compression='terser')
+    script = session.create_script(source=frontboard_ts)
+    script.load()
+    atexit.register(lambda: session.detach())
+
+    from anfora.anfora import init_driver
+    init_driver()
+
+    if args.mjpeg is not None:
+        # With MJPEG server, I can't show terminateAllRunningApplications because WDA is a required app
+        process = multiprocessing.Process(target=mirroring_mjpeg, args=(args.mjpeg, args.UDID,))
+        process.start()
+        atexit.register(clean_up, process)
+
+    if args.install:
+        if os.path.isfile(args.install):
+            InstallationProxyService(lockdown=lockdown).install_from_local(args.install)
+            import zipfile
+            with zipfile.ZipFile(args.install) as ipa:
+                info_path: str = [_ for _ in ipa.namelist() if _.startswith('Payload/') and _.endswith('.app/Info.plist')][0]
+                with ipa.open(info_path) as info:
+                    from plistlib import FMT_XML, load
+                    pl = load(info, fmt=FMT_XML)
+                    installed_bundle_id: str = pl["CFBundleIdentifier"]
+            logger.info(f"{installed_bundle_id} installed!")
+            atexit.register(lambda: InstallationProxyService(lockdown=lockdown).uninstall(installed_bundle_id))
+        else:
+            logger.critical(f"{args.install} doesn't exist or is not a file!")
+            sys.exit(1)
+
     if args.location:
         latitude, longitude = args.location
         logger.info(f'Simulated LATITUDE: {latitude}, Simulated LONGITUDE: {longitude}')
@@ -190,9 +197,10 @@ def main():
 
     try:
         from anfora import anfora
-        anfora.main(device, path, lockdown, desired_caps['udid'], args.mjpeg, args.password)
-        if args.install:
-            InstallationProxyService(lockdown=lockdown).uninstall(installed_bundle_id)
+        path = os.path.join(args.DUMP_PATH,
+                            f'{EXPERIMENT_NAME}_{date.today()}_{time.strftime("%H.%M.%S", time.localtime())}')
+        os.makedirs(path)
+        anfora.main(device, path, lockdown, args.UDID, args.password)
     except Exception:
         import traceback
         logger.critical(traceback.format_exc())
