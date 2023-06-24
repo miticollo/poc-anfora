@@ -75,6 +75,8 @@ signal.signal(signal.SIGTERM, handler)
 def main():
     args = parse_options()
 
+    desired_caps.update({'mjpegServerPort': args.mjpeg})
+
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
         desired_caps.update({'showIOSLog': True})
@@ -210,4 +212,7 @@ def main():
 
 
 if __name__ == '__main__':
+    if sys.platform == "linux":
+        # https://stackoverflow.com/a/29558616
+        multiprocessing.set_start_method('spawn')
     main()
