@@ -92,12 +92,14 @@ def spawn_thread_closure(device: Device, stop_event: threading.Event):
 Interceptor.attach(ObjC.classes.BBServer['- _setSectionInfo:forSectionID:'].implementation, {
     onEnter(args) {
         const bbSectionInfo = new ObjC.Object(args[2]);
-        send({
-            type: "BulletinBoard",
-            appName: bbSectionInfo['- appName']().toString(),
-            BBSectionInfoSettings: bbSectionInfo['- sectionInfoSettings']().toString(),
-            pid: ObjC.classes.FBSSystemService.sharedService().pidForApplication_((new ObjC.Object(args[3])).toString()),
-        });
+        if (bbSectionInfo['- appName']() !== null) { // TODO: why some apps have no names? Are they interesting?
+            send({
+                type: "BulletinBoard",
+                appName: bbSectionInfo['- appName']().toString(),
+                BBSectionInfoSettings: bbSectionInfo['- sectionInfoSettings']().toString(),
+                pid: ObjC.classes.FBSSystemService.sharedService().pidForApplication_((new ObjC.Object(args[3])).toString()),
+            });
+        }
     }
 });""")
         script.on("message", _on_message)
