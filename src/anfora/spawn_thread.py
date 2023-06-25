@@ -204,6 +204,7 @@ Interceptor.attach(ObjC.classes.NEConfigurationManager['- saveConfigurationToDis
     sessions: List[Session] = []
 
     tccd()
+    # TODO: hooks for securityd? It manages the Keychain.
     bulletinBoard()
     nehelper()
     main()

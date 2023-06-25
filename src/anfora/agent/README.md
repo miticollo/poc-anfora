@@ -13,7 +13,7 @@ for f in $(ls -1 -I 'com.apple.SpringBoard.plist' -I 'com.apple.applecamerad.pli
   -I 'com.apple.tipsd.plist' -I 'com.apple.itunesstored.plist' -I 'com.apple.runningboardd.plist' \
   -I 'com.apple.cfprefsd.xpc.daemon.plist' -I 'com.apple.cfprefsd.xpc.daemon.system.plist' \
   -I 'com.apple.lsd.plist' -I 'com.apple.trustd.plist' -I 'com.apple.containermanagerd.plist'\
-  -I 'com.apple.nehelper-embedded.plist'); do 
+  -I 'com.apple.nehelper-embedded.plist' -I 'com.apple.securityd.plist'); do 
   echo "${f}"
   launchctl unload "${f}">/dev/null 2>&1
 done
@@ -84,6 +84,10 @@ I don't know but without it any app opens.
 ## `/System/Library/LaunchDaemons/com.apple.searchd.plist`
 
 Spotlight
+
+## `/System/Library/LaunchDaemons/com.apple.securityd.plist`
+
+Handle keychains etc
 
 ## `/System/Library/LaunchDaemons/com.apple.sharingd.plist`
 
