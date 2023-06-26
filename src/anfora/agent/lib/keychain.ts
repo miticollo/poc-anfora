@@ -65,37 +65,46 @@ export function hookKeychain(): void {
     if (Process.findModuleByName(SECURITY_PATH) !== null) {
         Interceptor.attach(Module.getExportByName(SECURITY_PATH, "SecItemAdd"), {
             onEnter(args): void {
-                const query = dictFromNSDict(new ObjC.Object(args[0]));
-                let data: ArrayBuffer | null;
-                if (query['v_Data'] === undefined) data = null;
-                else {
-                    data = query['v_Data'];
-                    delete query['v_Data'];
+                this.query = dictFromNSDict(new ObjC.Object(args[0]));
+            },
+            onLeave(retval): void {
+                if (retval.toInt32() == 0) { // This should prevent reporting events with result code like errSecDuplicateItem.
+                    let data: ArrayBuffer | null;
+                    if (this.query['v_Data'] === undefined) data = null;
+                    else {
+                        data = this.query['v_Data'];
+                        delete this.query['v_Data'];
+                    }
+                    send({
+                        type: "keychain",
+                        op: "SecItemAdd",
+                        query: Object.fromEntries(Object.entries(this.query).map(([k, v]: [string, any]) => [getKeyByValue(k), getKeyByValue(v)])),
+                    }, data);
                 }
-                send({
-                    type: "keychain",
-                    op: "SecItemAdd",
-                    query: Object.fromEntries(Object.entries(query).map(([k, v]) => [getKeyByValue(k), getKeyByValue(v)])),
-                }, data);
             }
         });
 
         Interceptor.attach(Module.getExportByName(SECURITY_PATH, "SecItemUpdate"), {
             onEnter(args): void {
-                const query = dictFromNSDict(new ObjC.Object(args[0]));
-                const attributesToUpdate = dictFromNSDict(new ObjC.Object(args[1]));
-                let data: ArrayBuffer | null;
-                if (attributesToUpdate['v_Data'] === undefined) data = null;
-                else {
-                    data = attributesToUpdate['v_Data'];
-                    delete attributesToUpdate['v_Data'];
+                this.query = dictFromNSDict(new ObjC.Object(args[0]));
+                this.attributesToUpdate = dictFromNSDict(new ObjC.Object(args[1]));
+
+            },
+            onLeave(retval): void {
+                if (retval.toInt32() == 0) { // This should prevent reporting events with result code like errSecItemNotFound.
+                    let data: ArrayBuffer | null;
+                    if (this.attributesToUpdate['v_Data'] === undefined) data = null;
+                    else {
+                        data = this.attributesToUpdate['v_Data'];
+                        delete this.attributesToUpdate['v_Data'];
+                    }
+                    send({
+                        type: "keychain",
+                        op: "SecItemUpdate",
+                        query: Object.fromEntries(Object.entries(this.query).map(([k, v]: [string, any]) => [getKeyByValue(k), getKeyByValue(v)])),
+                        attributesToUpdate: Object.fromEntries(Object.entries(this.attributesToUpdate).map(([k, v]: [string, any]) => [getKeyByValue(k), getKeyByValue(v)])),
+                    }, data);
                 }
-                send({
-                    type: "keychain",
-                    op: "SecItemUpdate",
-                    query: Object.fromEntries(Object.entries(query).map(([k, v]) => [getKeyByValue(k), getKeyByValue(v)])),
-                    attributesToUpdate: Object.fromEntries(Object.entries(attributesToUpdate).map(([k, v]) => [getKeyByValue(k), getKeyByValue(v)])),
-                }, data);
             }
         });
 
@@ -104,19 +113,23 @@ export function hookKeychain(): void {
 
         Interceptor.attach(SecItemDeleteAddress, {
             onEnter(args): void {
-                const query = dictFromNSDict(new ObjC.Object(args[0]));
-                send({
-                    type: "keychain",
-                    op: "SecItemDelete",
-                    query: Object.fromEntries(Object.entries(query).map(([k, v]) => [getKeyByValue(k), getKeyByValue(v)])),
-                });
+                this.query = dictFromNSDict(new ObjC.Object(args[0]));
+            },
+            onLeave(retval) {
+                if (retval.toInt32() == 0) { // This should prevent reporting events with result code like errSecItemNotFound.
+                    send({
+                        type: "keychain",
+                        op: "SecItemDelete",
+                        query: Object.fromEntries(Object.entries(this.query).map(([k, v]: [string, any]) => [getKeyByValue(k), getKeyByValue(v)])),
+                    });
+                }
             }
         });
 
         rpc.exports.clear = function (): void {
             const searchDictionary = ObjC.classes.NSMutableDictionary.alloc().init();
             searchDictionary.setObject_forKey_(kSec.kSecAttrSynchronizableAny, kSec.kSecAttrSynchronizable);
-            itemClasses.forEach((clazz) => {
+            itemClasses.forEach((clazz: kSec): void => {
 
                 // set the class-type we are querying for now & delete
                 searchDictionary.setObject_forKey_(clazz, kSec.kSecClass);

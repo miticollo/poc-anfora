@@ -8,6 +8,7 @@ import sys
 import tarfile
 import tempfile
 import threading
+from datetime import datetime, timezone
 from typing import Optional
 
 import _frida
@@ -68,6 +69,8 @@ def pull_extract_tar(client: paramiko.SSHClient, paths: set, password: str, dest
     # https://github.com/paramiko/paramiko/issues/593#issuecomment-145377328
     with open(temp_tar_file_path, "wb") as fdout:
         names: str = ' '.join(f"'{path}'" for path in paths)
+        # TODO: how to handle symlinks on Windows?
+        #  At the moment symlinks are not dereference because there is a loop in TamTam Data container.
         tar_cmd = "tar -cf - --xattrs --hard-dereference "
         if next(iter(paths)).startswith(MNT_POINT):
             tar_cmd += f"-P --transform='s,^{MNT_POINT},private/var,' "
@@ -195,9 +198,12 @@ CRUD operation on {_path} (`contactsd` SQLite DB):
 
 def report_keychain_crud_op(process: _frida.Process, payload, data: Optional[bytes]):
     _path: str = "/private/var/Keychains/"
+    # I add local datetime to compare timestamp in Keychain DB.
+    # Time format: [Apple Cocoa Core Data timestamp](https://www.epochconverter.com/coredata)
     msg: str = f"""
 {payload['op']} on {_path} (`securityd` SQLite DB):
     process = {process.name} (PID {process.pid})
+    datetime (in local timezone) = {datetime.now(timezone.utc).astimezone().isoformat()}
     query = {json.dumps(payload['query'], indent=6)}"""
     if payload['op'] == 'SecItemUpdate':
         msg += f"""
@@ -314,6 +320,8 @@ def main(device: Device, path: str, lockdown, udid: str, password: str = 'alpine
 
     dump(client, sub_experiment_name, path, password)
 
+    api.toggle_bluetooth()
+
     print("""
 ###################################
 #                                 # 
@@ -361,6 +369,8 @@ def main(device: Device, path: str, lockdown, udid: str, password: str = 'alpine
     kill_all_processes(device, spawn_thread, pcap_thread, stop_event)
 
     dump(client, sub_experiment_name, path, password)
+
+    api.toggle_bluetooth()
 
     print("""
 ###################################

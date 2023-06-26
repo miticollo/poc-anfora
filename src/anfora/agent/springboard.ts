@@ -17,6 +17,7 @@ const {
     BBDataProviderConnection,
     BBServer,
     NEConfigurationManager,
+    BluetoothManager,
 } = ObjC.classes;
 const kCFAllocatorDefault: NativePointer = Module.getExportByName('CoreFoundation', 'kCFAllocatorDefault').readPointer();
 const CFBundleCreate = new NativeFunction(
@@ -111,7 +112,7 @@ rpc.exports = {
             bbDataProviderConnection.removeDataProviderWithSectionID_(bundleIdentifiers.objectAtIndex_(i).toString());
     },
     resetAllAppNePermissions(): void {
-        // How did I find the class NEConfigurationManager?
+        // How did I discover the class NEConfigurationManager?
         // Well, using Ghidra on `/usr/libexec/nehelper` I discovered that it imports stuff from `NetworkExtension.framework`.
         // So, using `frida-trace` I searched all classes that start with NE*.
         const manager = NEConfigurationManager.sharedManager();
@@ -205,6 +206,17 @@ rpc.exports = {
     },
     getAirplaneMode(): boolean {
         return RadiosPreferences.alloc().init().airplaneMode();
+    },
+    toggleBluetooth(): void {
+        // How did I discover the class BluetoothManager?
+        // Searching on Discord: https://discord.com/channels/349243932447604736/688124600269144162/911329093453246465
+        // and GitHub:
+        // https://github.com/a3tweaks/Flipswitch/blob/c1fe70e25d843/PrivateHeaders/SpringBoard/SpringBoard.h#L384-L389
+        const current: boolean = BluetoothManager.sharedInstance().enabled();
+        BluetoothManager.sharedInstance().setEnabled_(!current);
+    },
+    getBluetooth(): boolean {
+        return BluetoothManager.sharedInstance().enabled();
     },
     signOutOfAppStore(): void {
         // TODO: add support for iOS 12 & 13
