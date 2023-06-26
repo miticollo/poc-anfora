@@ -62,18 +62,18 @@ def kill_all_processes(device: Device, spawn_thread: threading.Thread, pcap_thre
     pids.clear()
 
 
-def pull_extract_tar(client: paramiko.SSHClient, paths: set, destination: str):
+def pull_extract_tar(client: paramiko.SSHClient, paths: set, password: str, destination: str):
     temp_tar_file_path = pathlib.Path(tempfile.gettempdir(), "AnForA_DUMP_TMP.tar")
     # based on https://stackoverflow.com/a/32758464 and
     # https://github.com/paramiko/paramiko/issues/593#issuecomment-145377328
     with open(temp_tar_file_path, "wb") as fdout:
         names: str = ' '.join(f"'{path}'" for path in paths)
+        tar_cmd = "tar -cf - --xattrs --hard-dereference "
         if next(iter(paths)).startswith(MNT_POINT):
-            tar_cmd = f"tar -cf - --xattrs --hard-dereference -P --transform='s,^{MNT_POINT},private/var,' {names}"
-        else:
-            tar_cmd = f"tar -cf - --xattrs --hard-dereference --transform='s,^,{destination},RH' {names}"
+            tar_cmd += f"-P --transform='s,^{MNT_POINT},private/var,' "
+        tar_cmd += f"--transform='s,^,{destination},RH' {names}"
         # one channel per command
-        stdin, stdout, stderr = client.exec_command(f"stty raw; {tar_cmd}")
+        stdin, stdout, stderr = client.exec_command(f"stty raw; echo {password} | sudo -S -p '' {tar_cmd}")
         # get the shared channel for stdout/stderr/stdin
         channel = stdout.channel
         # we do not need stdin.
@@ -137,12 +137,12 @@ def dump(client: paramiko.SSHClient, name: str, parent_path: str, password: str)
     logger.info(f'Dumping from snapshot...')
     do_mount(client, 'anfora', '/var', MNT_POINT, password)
     dump_metadata(client, first_dump, snapshot_paths)
-    pull_extract_tar(client, snapshot_paths, first_dump)
+    pull_extract_tar(client, snapshot_paths, password, first_dump)
     do_unmount(client, MNT_POINT, password)
     do_delete(client, 'anfora', '/var', password)
     logger.info(f'Dumping from FS...')
     dump_metadata(client, last_dump, dump_paths)
-    pull_extract_tar(client, dump_paths, last_dump)
+    pull_extract_tar(client, dump_paths, password, last_dump)
     dump_paths.clear()
 
 
@@ -188,6 +188,27 @@ CRUD operation on {_path} (`contactsd` SQLite DB):
     _internalIdentifier = {payload}""")
     internal_identifiers.add(payload)
     dump_paths.update({_path})
+    # Some process doesn't have a container (e.g., ContactUI.framework).
+    # So we store its PID because the function detect_analysis_paths is never triggered.
+    pids.add(process.pid)
+
+
+def report_keychain_crud_op(process: _frida.Process, payload, data: Optional[bytes]):
+    _path: str = "/private/var/Keychains/"
+    msg: str = f"""
+{payload['op']} on {_path} (`securityd` SQLite DB):
+    process = {process.name} (PID {process.pid})
+    query = {json.dumps(payload['query'], indent=6)}"""
+    if payload['op'] == 'SecItemUpdate':
+        msg += f"""
+    attributesToUpdate = {json.dumps(payload['attributesToUpdate'], indent=6)}"""
+    if data is not None:
+        # TODO: improve results presentation
+        msg += f"""
+    kSecValueData = {data}"""
+    logger.info(msg)
+    dump_paths.update({_path})
+    # See report_contact_crud_op
     pids.add(process.pid)
 
 
@@ -218,6 +239,9 @@ def reset_to_cleanup_backup(api: ScriptExportsSync, client: paramiko.SSHClient, 
             do_rsync(client, src, dest, password)
         do_unmount(client, MNT_POINT, password)
         # TODO: Which are reverts missing? Cookies, other permissions, new photos, etc...
+        #  Almost surely Keychain queries MUST be reverted but how?
+        #  If you try to remove all items for a specific app (e.g., Session) you also must reinstall it.
+        #  Because it can't open DB given that the password is removed by SecItemDelete.
         reset_iphone(api)
         api.toggle_airplane_mode()
         rsync_paths.clear()

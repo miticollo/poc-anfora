@@ -199,7 +199,7 @@ def main():
 
     try:
         from anfora import anfora
-        path = os.path.join(args.DUMP_PATH,
+        path = os.path.join(os.path.expanduser(args.DUMP_PATH),
                             f'{EXPERIMENT_NAME}_{date.today()}_{time.strftime("%H.%M.%S", time.localtime())}')
         os.makedirs(path)
         anfora.main(device, path, lockdown, args.UDID, args.password)

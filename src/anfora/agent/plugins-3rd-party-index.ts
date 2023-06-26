@@ -1,4 +1,5 @@
 import {hookContact} from "./lib/contact.js";
+import {hookKeychain} from "./lib/keychain.js";
 
 rpc.exports = {
     getIdentifier(path: string): string {
@@ -13,6 +14,7 @@ rpc.exports = {
     }
 };
 
-hookContact()
+hookContact();
+hookKeychain();
 // TODO: network sniffing
 // TODO: DB password sniffing

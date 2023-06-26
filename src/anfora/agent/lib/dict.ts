@@ -5,7 +5,13 @@
 const NSPropertyListImmutable = 0;
 
 export function valueOf(value: ObjC.Object): any {
-    const {NSArray, NSDictionary, NSNumber, __NSCFBoolean} = ObjC.classes
+    const {
+        NSArray,
+        NSDictionary,
+        NSNumber,
+        __NSCFBoolean,
+        NSData,
+    } = ObjC.classes;
     if (value === null || typeof value !== 'object')
         return value;
     if (value.isKindOfClass_(__NSCFBoolean))
@@ -16,10 +22,17 @@ export function valueOf(value: ObjC.Object): any {
         return dictFromNSDict(value);
     if (value.isKindOfClass_(NSNumber))
         return parseFloat(value.toString());
+    if (value.isKindOfClass_(NSData))
+        return parseNSData(value);
     return value.toString();
 }
 
 type Dictionary = { [key: string]: any };
+
+export function parseNSData(data: ObjC.Object | null): ArrayBuffer | null {
+    // Imported from https://github.com/nowsecure/airspy/blob/master/lib/agent/foundation.ts
+    return (data !== null) ? data.bytes().readByteArray(data.length()) : null;
+}
 
 export function dictFromNSDict(nsDict: ObjC.Object): Dictionary {
     const jsDict: Dictionary = {};

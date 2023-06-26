@@ -23,11 +23,11 @@ def spawn_thread_closure(device: Device, stop_event: threading.Event):
 
     from frida.core import Session, Script, ScriptExportsSync
     from anfora.anfora import detect_analysis_paths, report_query_on_tcc_db, report_contact_crud_op, garbage, \
-        report_new_notification_permission, report_change_on_ne_configuration
+        report_new_notification_permission, report_change_on_ne_configuration, report_keychain_crud_op
 
-    from typing import List, Tuple
+    from typing import List, Tuple, Optional
 
-    def on_message(process: _frida.Process, message: ScriptMessage):
+    def on_message(process: _frida.Process, message: ScriptMessage, data: Optional[bytes]):
         if message["type"] == "send":
             payload: dict = message["payload"]
             mtype: str = payload["type"]
@@ -37,6 +37,12 @@ def spawn_thread_closure(device: Device, stop_event: threading.Event):
                 # TODO: handle location
                 #  CoreLocationVanillaWhenInUseAuthPromptPlugin
                 pass
+            elif mtype == "keychain":
+                # TODO: is this a reliable solution?
+                #  Well, it seems that securityd does a lot of queries but are they all necessary?
+                #  I don't know a deeper investigation is required.
+                #  Anyway a possible solution is the same as with tccd.
+                report_keychain_crud_op(process, payload, data)
         else:
             logger.critical(f"Unhandled message: {message} in {process}")
 
@@ -162,7 +168,7 @@ Interceptor.attach(ObjC.classes.NEConfigurationManager['- saveConfigurationToDis
                                                                    source=bundle_for_plugins)
                         else:
                             script: Script = session.create_script(name="index", source=bundle)
-                        script.on("message", lambda message, data, proc=process: on_message(proc, message))
+                        script.on("message", lambda message, data, proc=process: on_message(proc, message, data))
                         # load() waits for the script to be fully executed before returning:
                         # https://t.me/fridadotre/84125
                         script.load()
@@ -204,7 +210,6 @@ Interceptor.attach(ObjC.classes.NEConfigurationManager['- saveConfigurationToDis
     sessions: List[Session] = []
 
     tccd()
-    # TODO: hooks for securityd? It manages the Keychain.
     bulletinBoard()
     nehelper()
     main()
