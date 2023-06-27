@@ -21,7 +21,9 @@
   },
   "scripts": {
     "appium": "if [[ \"$(uname)\" == 'Darwin' ]]; then export DEVELOPER_DIR=$npm_package_config_XCODE_DIR; fi && npx appium server --session-override",
-    "appium-dbg": "if [[ \"$(uname)\" == 'Darwin' ]]; then export DEVELOPER_DIR=$npm_package_config_XCODE_DIR; fi && npx appium server --log-level 'debug:error' --log-timestamp --local-timezone --session-override"
+    "appium-dbg": "if [[ \"$(uname)\" == 'Darwin' ]]; then export DEVELOPER_DIR=$npm_package_config_XCODE_DIR; fi && npx appium server --log-level 'debug:error' --log-timestamp --local-timezone --session-override",
+    "appium-win": "npx appium server --session-override",
+    "appium-dbg-win": "npx appium server --log-level 'debug:error' --log-timestamp --local-timezone --session-override"
   },
   "homepage": "https://github.com/miticollo/test-appium#readme",
   "dependencies": {
