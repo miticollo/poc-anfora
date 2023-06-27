@@ -18,6 +18,7 @@ const {
     BBServer,
     NEConfigurationManager,
     BluetoothManager,
+    SBWiFiManager,
 } = ObjC.classes;
 const kCFAllocatorDefault: NativePointer = Module.getExportByName('CoreFoundation', 'kCFAllocatorDefault').readPointer();
 const CFBundleCreate = new NativeFunction(
@@ -185,7 +186,7 @@ rpc.exports = {
     shutdown(): void {
         FBSSystemService.sharedService().shutdown();
     },
-    // TODO: Are [netctl](https://github.com/ProcursusTeam/netctl) features required in AnForA?
+    // TODO: More features from netctl are required?
     getBrightness(): number {
         // based on https://github.com/doronz88/rpc-project/blob/59b0f41523/src/rpcclient/rpcclient/ios/backlight.py#L18
         return BrightnessSystemClient.alloc().init().copyPropertyForKey_('DisplayBrightness').valueForKey_('Brightness').floatValue();
@@ -204,6 +205,12 @@ rpc.exports = {
         const current: boolean = RadiosPreferences.alloc().init().airplaneMode();
         RadiosPreferences.alloc().init()["- setAirplaneMode:"](!current);
     },
+    turnOnAirplaneMode(): void {
+        RadiosPreferences.alloc().init()["- setAirplaneMode:"](true);
+    },
+    turnOffAirplaneMode(): void {
+        RadiosPreferences.alloc().init()["- setAirplaneMode:"](false);
+    },
     getAirplaneMode(): boolean {
         return RadiosPreferences.alloc().init().airplaneMode();
     },
@@ -215,8 +222,33 @@ rpc.exports = {
         const current: boolean = BluetoothManager.sharedInstance().enabled();
         BluetoothManager.sharedInstance().setEnabled_(!current);
     },
+    turnOnBluetooth(): void {
+        BluetoothManager.sharedInstance().setEnabled_(true);
+    },
+    turnOffBluetooth(): void {
+        BluetoothManager.sharedInstance().setEnabled_(false);
+    },
     getBluetooth(): boolean {
         return BluetoothManager.sharedInstance().enabled();
+    },
+    // How did I discover the class SBWiFiManager?
+    // Googling: https://stackoverflow.com/a/2152933, https://stackoverflow.com/questions/2053114/iphone-wi-fi-manager-sdk#comment8830285_2152933
+    // You can't use Appium. It only supports Android.
+    turnOnWifi(): void {
+        SBWiFiManager.sharedInstance().setWiFiEnabled_(true);
+    },
+    turnOffWifi(): void {
+        SBWiFiManager.sharedInstance().setWiFiEnabled_();
+    },
+    getWifi(): boolean {
+        return SBWiFiManager.sharedInstance().wiFiEnabled();
+    },
+    getCurrentWifiNetwork(): string | null {
+        const name: ObjC.Object = SBWiFiManager.sharedInstance().currentNetworkName();
+        return name === null ? null : name.UTF8String();
+    },
+    wifiConnect(bssid: boolean, password: string, ssid: string): void {
+        // TODO: it is possible to connect to a WiFi network using frida: https://github.com/ProcursusTeam/netctl/blob/main/wifi/wifi-connect.m
     },
     signOutOfAppStore(): void {
         // TODO: add support for iOS 12 & 13

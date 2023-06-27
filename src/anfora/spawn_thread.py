@@ -161,6 +161,7 @@ Interceptor.attach(ObjC.classes.NEConfigurationManager['- saveConfigurationToDis
                         sys.exit(1) # This IS NOT a good idea!
                     path: str = process.parameters['path']
                     try:
+                        # TODO: handle frida crashes
                         session: Session = device.attach(process.pid, realm="native")
                         # TODO: sessions.append(session). But https://github.com/frida/frida/issues/1056. Why?
                         if 'appex' in path:

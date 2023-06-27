@@ -237,7 +237,7 @@ A changing happens in NEConfiguration at ?? (`nehelper` ??):
 
 def reset_to_cleanup_backup(api: ScriptExportsSync, client: paramiko.SSHClient, password: str):
     if client._transport is not None:
-        api.toggle_airplane_mode()
+        api.turn_on_airplane_mode()
         do_mount(client, 'CLEAN_BACKUP', '/var', MNT_POINT, password)
         for path in rsync_paths:
             src: str = re.sub(r'(/private)?/var', MNT_POINT, path)
@@ -249,7 +249,7 @@ def reset_to_cleanup_backup(api: ScriptExportsSync, client: paramiko.SSHClient, 
         #  If you try to remove all items for a specific app (e.g., Session) you also must reinstall it.
         #  Because it can't open DB given that the password is removed by SecItemDelete.
         reset_iphone(api)
-        api.toggle_airplane_mode()
+        api.turn_off_airplane_mode()
         rsync_paths.clear()
 
 
@@ -320,7 +320,7 @@ def main(device: Device, path: str, lockdown, udid: str, password: str = 'alpine
 
     dump(client, sub_experiment_name, path, password)
 
-    api.toggle_bluetooth()
+    api.turn_on_bluetooth()
 
     print("""
 ###################################
@@ -370,7 +370,7 @@ def main(device: Device, path: str, lockdown, udid: str, password: str = 'alpine
 
     dump(client, sub_experiment_name, path, password)
 
-    api.toggle_bluetooth()
+    api.turn_off_bluetooth()
 
     print("""
 ###################################

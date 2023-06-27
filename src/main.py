@@ -111,7 +111,20 @@ def main():
     api: ScriptExportsSync = script.exports_sync
     api.terminate_all_running_applications()
     # maybe equals to t.connect_instruments().app_running_processes()?
+    api.turn_off_wifi()
+    api.turn_on_wifi()
+    if not api.get_wifi():
+        sys.exit('Turn on WiFi: FAILED!')
+    ssid: str
+    while True:
+        ssid = api.get_current_wifi_network()
+        if ssid is not None:
+            break
+        time.sleep(.1)
+    logger.info(f"iPhone is connected to {ssid}")
     session.detach()
+    # TODO: check if iPhone and PC/macOS are on the same WiFi network.
+    #  Another solution: change communication protocol
 
     desired_caps.update({
         'udid': args.UDID,
