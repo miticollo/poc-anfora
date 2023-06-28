@@ -22,7 +22,7 @@ class PcapdServiceForAnfora(PcapdService):
             if not packet.frame_pre_length:
                 packet.data = ETHERNET_HEADER + packet.data
             packet.interface_type = INTERFACE_NAMES(packet.interface_type)
-            packet.protocol_family = socket.AddressFamily(packet.protocol_family)
+            # packet.protocol_family = socket.AddressFamily(packet.protocol_family) # comment to avoid Windows error
 
             yield packet
 
