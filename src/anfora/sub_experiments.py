@@ -165,7 +165,7 @@ def open_signal(device: Device, lockdown, driver: WebDriver, bundle_id: str):
     from pymobiledevice3.lockdown import create_using_usbmux
     spawned_pid = _spawn_by_pymobiledevice(create_using_usbmux(serial=lockdown.identifier), bundle_id)
     # Why is necessary a new LockdownClient object?
-    #  I don't know. But on Windows a crash happens unless this new object is created.
+    #  I don't know. But on Windows, a crash happens unless this new object is created.
     atexit.register(lambda: device.kill(spawned_pid))
     try:
         wait_for_element(driver, AppiumBy.IOS_CLASS_CHAIN,
