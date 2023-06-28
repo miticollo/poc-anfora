@@ -151,7 +151,7 @@ def chain_of_apps(device: Device, lockdown, driver: WebDriver, bundle_id: str):
         contacts = wait_for_elements(driver, AppiumBy.IOS_PREDICATE, 'label == "Carl" AND name == "Carl" AND value == "Carl"')
         contacts[-1].click()
         wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Sì"').click()
-        wait_until_element_is_invisible(driver, share_btn)
+        wait_until_element_is_invisible(driver, share_btn, poll_frequency=1.0)
     except Exception:
         raise
     finally:
