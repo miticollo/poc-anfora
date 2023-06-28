@@ -74,7 +74,13 @@ def pull_extract_tar(client: paramiko.SSHClient, paths: set, password: str, dest
         tar_cmd = "tar -cf - --xattrs --hard-dereference "
         if next(iter(paths)).startswith(MNT_POINT):
             tar_cmd += f"-P --transform='s,^{MNT_POINT},private/var,' "
-        tar_cmd += f"--transform='s,^,{destination},RH' {names}"
+        if os.name == 'nt':
+            # https://stackoverflow.com/a/31976060
+            tar_cmd += "--transform='s/[:*?\\\\\"<>|]/_/g' "
+        else:
+            # A symbolic link doesn't work on Windows
+            tar_cmd += f"--transform='s,^,{destination},RH' "
+        tar_cmd += f"{names}"
         # one channel per command
         stdin, stdout, stderr = client.exec_command(f"stty raw; echo {password} | sudo -S -p '' {tar_cmd}")
         # get the shared channel for stdout/stderr/stdin
@@ -139,10 +145,14 @@ def dump(client: paramiko.SSHClient, name: str, parent_path: str, password: str)
     snapshot_paths: set = {re.sub(r'(/private)?/var', MNT_POINT, path) for path in dump_paths}
     logger.info(f'Dumping from snapshot...')
     do_mount(client, 'anfora', '/var', MNT_POINT, password)
-    dump_metadata(client, first_dump, snapshot_paths)
-    pull_extract_tar(client, snapshot_paths, password, first_dump)
-    do_unmount(client, MNT_POINT, password)
-    do_delete(client, 'anfora', '/var', password)
+    try:
+        dump_metadata(client, first_dump, snapshot_paths)
+        pull_extract_tar(client, snapshot_paths, password, first_dump)
+    except Exception as e:
+        raise e
+    finally:
+        do_unmount(client, MNT_POINT, password)
+        do_delete(client, 'anfora', '/var', password)
     logger.info(f'Dumping from FS...')
     dump_metadata(client, last_dump, dump_paths)
     pull_extract_tar(client, dump_paths, password, last_dump)
@@ -291,7 +301,6 @@ def main(device: Device, path: str, lockdown, udid: str, password: str = 'alpine
 
     spawn_thread: threading.Thread = threading.Thread(target=spawn_thread_closure, args=(device, stop_event,), kwargs={})
     atexit.register(session.detach)
-    atexit.register(reset_to_cleanup_backup, api, client, password)
     atexit.register(api.terminate_all_running_applications)
     atexit.register(kill_all_processes, device, spawn_thread, None, stop_event)
 
@@ -299,7 +308,8 @@ def main(device: Device, path: str, lockdown, udid: str, password: str = 'alpine
 
     do_create(client, 'CLEAN_BACKUP', '/var', password)
 
-    print("""
+    try:
+        print("""
 ###################################
 #                                 # 
 #     New contact on Telegram     #
@@ -307,22 +317,22 @@ def main(device: Device, path: str, lockdown, udid: str, password: str = 'alpine
 ###################################
 """)
 
-    do_create(client, 'anfora', '/var', password)
+        do_create(client, 'anfora', '/var', password)
 
-    driver.unlock()     # TODO: workaround because I couldn't disable lockscreen timeout
-    spawn_thread.start()
-    sub_experiment_name: str = '0_new_contact_on_telegram'
-    pcap_thread: threading.Thread = threading.Thread(target=pcap,
-                                                     args=(lockdown, sub_experiment_name, path, stop_event,), kwargs={})
-    pcap_thread.start()
-    new_contact_on_telegram(device, lockdown, driver, 'ph.telegra.Telegraph')
-    kill_all_processes(device, spawn_thread, pcap_thread, stop_event)
+        driver.unlock()     # TODO: workaround because I couldn't disable lockscreen timeout
+        spawn_thread.start()
+        sub_experiment_name: str = '0_new_contact_on_telegram'
+        pcap_thread: threading.Thread = threading.Thread(target=pcap,
+                                                         args=(lockdown, sub_experiment_name, path, stop_event,), kwargs={})
+        pcap_thread.start()
+        new_contact_on_telegram(device, lockdown, driver, 'ph.telegra.Telegraph')
+        kill_all_processes(device, spawn_thread, pcap_thread, stop_event)
 
-    dump(client, sub_experiment_name, path, password)
+        dump(client, sub_experiment_name, path, password)
 
-    api.turn_on_bluetooth()
+        api.turn_on_bluetooth()
 
-    print("""
+        print("""
 ###################################
 #                                 # 
 #      New contact on TamTam      #
@@ -330,24 +340,24 @@ def main(device: Device, path: str, lockdown, udid: str, password: str = 'alpine
 ###################################
 """)
 
-    do_create(client, 'anfora', '/var', password)
+        do_create(client, 'anfora', '/var', password)
 
-    spawn_thread = threading.Thread(target=spawn_thread_closure, args=(device, stop_event,), kwargs={})
+        spawn_thread = threading.Thread(target=spawn_thread_closure, args=(device, stop_event,), kwargs={})
 
-    driver.unlock()     # TODO: workaround because I couldn't disable lockscreen timeout
-    spawn_thread.start()
-    sub_experiment_name = '1_new_contact_on_tamtam'
-    pcap_thread: threading.Thread = threading.Thread(target=pcap,
-                                                     args=(lockdown, sub_experiment_name, path, stop_event,), kwargs={})
-    pcap_thread.start()
-    new_contact_on_tamtam(device, lockdown, driver, 'ru.odnoklassniki.messenger')
-    kill_all_processes(device, spawn_thread, pcap_thread, stop_event)
+        driver.unlock()     # TODO: workaround because I couldn't disable lockscreen timeout
+        spawn_thread.start()
+        sub_experiment_name = '1_new_contact_on_tamtam'
+        pcap_thread: threading.Thread = threading.Thread(target=pcap,
+                                                         args=(lockdown, sub_experiment_name, path, stop_event,), kwargs={})
+        pcap_thread.start()
+        new_contact_on_tamtam(device, lockdown, driver, 'ru.odnoklassniki.messenger')
+        kill_all_processes(device, spawn_thread, pcap_thread, stop_event)
 
-    dump(client, sub_experiment_name, path, password)
+        dump(client, sub_experiment_name, path, password)
 
-    reset_to_cleanup_backup(api, client, password)
+        reset_to_cleanup_backup(api, client, password)
 
-    print("""
+        print("""
 ####################################
 #                                  # 
 #           Chain of App           #
@@ -355,24 +365,24 @@ def main(device: Device, path: str, lockdown, udid: str, password: str = 'alpine
 ####################################
 """)
 
-    do_create(client, 'anfora', '/var', password)
+        do_create(client, 'anfora', '/var', password)
 
-    spawn_thread = threading.Thread(target=spawn_thread_closure, args=(device, stop_event,), kwargs={})
+        spawn_thread = threading.Thread(target=spawn_thread_closure, args=(device, stop_event,), kwargs={})
 
-    driver.unlock()     # TODO: workaround because I couldn't disable lockscreen timeout
-    spawn_thread.start()
-    sub_experiment_name = '2_chain_of_apps'
-    pcap_thread: threading.Thread = threading.Thread(target=pcap,
-                                                     args=(lockdown, sub_experiment_name, path, stop_event,), kwargs={})
-    pcap_thread.start()
-    chain_of_apps(device, lockdown, driver, 'ru.odnoklassniki.messenger')
-    kill_all_processes(device, spawn_thread, pcap_thread, stop_event)
+        driver.unlock()     # TODO: workaround because I couldn't disable lockscreen timeout
+        spawn_thread.start()
+        sub_experiment_name = '2_chain_of_apps'
+        pcap_thread: threading.Thread = threading.Thread(target=pcap,
+                                                         args=(lockdown, sub_experiment_name, path, stop_event,), kwargs={})
+        pcap_thread.start()
+        chain_of_apps(device, lockdown, driver, 'ru.odnoklassniki.messenger')
+        kill_all_processes(device, spawn_thread, pcap_thread, stop_event)
 
-    dump(client, sub_experiment_name, path, password)
+        dump(client, sub_experiment_name, path, password)
 
-    api.turn_off_bluetooth()
+        api.turn_off_bluetooth()
 
-    print("""
+        print("""
 ###################################
 #                                 # 
 #           Open Signal           #
@@ -380,26 +390,28 @@ def main(device: Device, path: str, lockdown, udid: str, password: str = 'alpine
 ###################################
 """)
 
-    do_create(client, 'anfora', '/var', password)
+        do_create(client, 'anfora', '/var', password)
 
-    spawn_thread = threading.Thread(target=spawn_thread_closure, args=(device, stop_event,), kwargs={})
+        spawn_thread = threading.Thread(target=spawn_thread_closure, args=(device, stop_event,), kwargs={})
 
-    driver.unlock()  # TODO: workaround because I couldn't disable lockscreen timeout
-    spawn_thread.start()
-    sub_experiment_name = '3_open_signal'
-    pcap_thread: threading.Thread = threading.Thread(target=pcap,
-                                                     args=(lockdown, sub_experiment_name, path, stop_event,), kwargs={})
-    pcap_thread.start()
-    open_signal(device, lockdown, driver, 'org.whispersystems.signal')
-    kill_all_processes(device, spawn_thread, pcap_thread, stop_event)
+        driver.unlock()  # TODO: workaround because I couldn't disable lockscreen timeout
+        spawn_thread.start()
+        sub_experiment_name = '3_open_signal'
+        pcap_thread: threading.Thread = threading.Thread(target=pcap,
+                                                         args=(lockdown, sub_experiment_name, path, stop_event,), kwargs={})
+        pcap_thread.start()
+        open_signal(device, lockdown, driver, 'org.whispersystems.signal')
+        kill_all_processes(device, spawn_thread, pcap_thread, stop_event)
 
-    dump(client, sub_experiment_name, path, password)
+        dump(client, sub_experiment_name, path, password)
 
-    # EOE (End-Of-Experiment)
+        # EOE (End-Of-Experiment)
+    except Exception as e:
+        raise e
+    finally:
+        reset_to_cleanup_backup(api, client, password)
 
-    reset_to_cleanup_backup(api, client, password)
-
-    do_delete(client, 'CLEAN_BACKUP', '/var', password)
+        do_delete(client, 'CLEAN_BACKUP', '/var', password)
 
     if client:
         client.close()
