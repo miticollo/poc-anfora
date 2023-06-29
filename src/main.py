@@ -84,8 +84,6 @@ def main():
         if sys.platform != "darwin":
             sys.exit(f'You can\'t compile WDA on {sys.platform}!')
 
-    desired_caps.update({'mjpegServerPort': args.mjpeg})
-
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
         desired_caps.update({'showIOSLog': True})
@@ -110,6 +108,31 @@ def main():
             break
         except frida.ProcessNotFoundError:
             logger.warning('frida.get_device failed. Try again...')
+
+    if args.team_id is not None:
+        desired_caps.update({
+            'xcodeOrgId': args.team_id,
+            'allowProvisioningDeviceRegistration': True,
+            'showXcodeLog': True
+        })
+    else:
+        try:
+            device.get_process(WDA_CF_BUNDLE_NAME)
+        except frida.ProcessNotFoundError:
+            try:
+                bundle_id = [app for app in device.enumerate_applications() if app.name == WDA_CF_BUNDLE_NAME][0].identifier
+                # TODO: a more robust solution using a custom approach + pymobiledevice3
+                d = tidevice.Device(udid=args.UDID)
+                d.debug = args.verbose
+                d.mount_developer_image()
+                del d
+                desired_caps.update({
+                    'useSimpleBuildTest': False,
+                    'usePreinstalledWDA': True,
+                    'updatedWDABundleId': bundle_id.replace('.xctrunner', ''),
+                })
+            except IndexError:
+                sys.exit(f'{WDA_CF_BUNDLE_NAME} is not installed!')
 
     if not args.install_wda_only:
         # TODO: A more robust design using a SpringboardService.class.
@@ -153,31 +176,6 @@ def main():
 
     desired_caps.update({'platformVersion': lockdown.product_version})
 
-    if args.team_id is not None:
-        desired_caps.update({
-            'xcodeOrgId': args.team_id,
-            'allowProvisioningDeviceRegistration': True,
-            'showXcodeLog': True
-        })
-    else:
-        try:
-            device.get_process(WDA_CF_BUNDLE_NAME)
-        except frida.ProcessNotFoundError:
-            try:
-                # TODO: a more robust solution using a custom approach + pymobiledevice3
-                d = tidevice.Device(udid=args.UDID)
-                d.debug = args.verbose
-                d.mount_developer_image()
-                del d
-                bundle_id = [app for app in device.enumerate_applications() if app.name == WDA_CF_BUNDLE_NAME][0].identifier
-                desired_caps.update({
-                    'useSimpleBuildTest': False,
-                    'usePreinstalledWDA': True,
-                    'updatedWDABundleId': bundle_id.replace('.xctrunner', ''),
-                })
-            except IndexError:
-                sys.exit(f'{WDA_CF_BUNDLE_NAME} is not installed!')
-
     session = device.attach('Springboard')
     from anfora.anfora import compiler, AGENT_ROOT_PATH
     frontboard_ts = compiler.build('frontboard.ts', project_root=AGENT_ROOT_PATH, compression='terser')
@@ -185,10 +183,13 @@ def main():
     script.load()
     atexit.register(lambda: session.detach())
 
+    desired_caps.update({'mjpegServerPort': args.mjpeg})
+
     from anfora.anfora import init_driver
     init_driver()
 
     if args.install_wda_only:
+        device.kill(WDA_CF_BUNDLE_NAME)
         exit(0)
 
     if args.mjpeg is not None:

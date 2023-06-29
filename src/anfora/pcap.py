@@ -1,5 +1,4 @@
 import os
-import socket
 import struct
 import threading
 from typing import Generator

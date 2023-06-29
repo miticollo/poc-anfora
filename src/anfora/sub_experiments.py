@@ -30,16 +30,19 @@ def new_contact_on_telegram(device: Device, lockdown, driver: WebDriver, bundle_
         if el is not None: # Not supported by action parser
             el.click()
             wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Aggiungi contatto"').click()
+        # TODO: add an if to support more devices
         driver.tap([(177, 248)], 500)  # focus
         from selenium.webdriver.common.action_chains import ActionChains
         actions: ActionChains = ActionChains(driver)
         for digit in '393337526902':
             actions.w3c_actions.key_action.key_down(digit).key_up(digit).pause(300 / 1000)
             actions.perform()
+        # TODO: add an if to support more devices
         driver.tap([(237, 131)], 500)
         for letter in 'Mario':
             actions.w3c_actions.key_action.key_down(letter).key_up(letter).pause(300 / 1000)
             actions.perform()
+        # TODO: add an if to support more devices
         driver.tap([(190, 179)], 500)
         for letter in 'Rossi':
             actions.w3c_actions.key_action.key_down(letter).key_up(letter).pause(300 / 1000)
@@ -74,12 +77,14 @@ def new_contact_on_tamtam(device: Device, lockdown, driver: WebDriver, bundle_id
         wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Crea contatto"').click()
         wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Nome"').send_keys('Luigi')
         wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'name == "Cognome"').send_keys('Rossi')
+        # TODO: add an if to support more devices
         driver.swipe(281, 417, 281, 312)
         time.sleep(2)
         wait_for_element(driver, AppiumBy.IOS_PREDICATE,
                          'label == "aggiungi telefono" AND name == "aggiungi telefono" AND type == "XCUIElementTypeCell"').click()
         wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'name == "cellulare" AND value == "Telefono"').send_keys(
             '+393337526902')
+        # TODO: add an if to support more devices
         driver.tap([(341, 82)], 500)
         el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE,
                                       'label == "Annulla" AND name == "Annulla" AND value == "Annulla"')
