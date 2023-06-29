@@ -32,7 +32,10 @@ def parse_options():
     import argparse
     parser = argparse.ArgumentParser(description='PoC for AnForA on iOS devices.')
     parser.add_argument('UDID', help='the UDID of the iOS device to test', type=nonempty_string)
-    parser.add_argument('DUMP_PATH', help='output path', type=nonempty_string)
+    parser.add_argument('-o', '--output', metavar='PATH', help='output path', type=nonempty_string,
+                        required='--install-wda-only' not in sys.argv)
+    parser.add_argument('--install-wda-only', action='store_true', default=False,
+                        help='Use this script to (re)install WDA app')
     parser.add_argument('-b', '--bundle-id', metavar='BUNDLE_ID', help='set the bundle identifier of the installed app',
                         type=nonempty_string)
     parser.add_argument('-t', '--timeout', metavar='MINUTES', type=check_positive,
@@ -53,6 +56,8 @@ def parse_options():
     parser.add_argument('-i', '--install', metavar='IPA_PATH', type=str, help='install a new app')
     parser.add_argument('-P', '--password', metavar='PASSWORD', type=str, default='alpine', help='mobile\'s password')
     args = parser.parse_args()
+    if args.install_wda_only and args.team_id is None:
+        parser.error('The --install-wda-only option requires --team-id.')
     if args.team_id is None and args.bundle_id is not None:
         parser.error('The --bundle-id option requires --team-id.')
     if args.port == args.mjpeg:
@@ -75,24 +80,29 @@ signal.signal(signal.SIGTERM, handler)
 def main():
     args = parse_options()
 
+    if args.team_id is not None:
+        if sys.platform != "darwin":
+            sys.exit(f'You can\'t compile WDA on {sys.platform}!')
+
     desired_caps.update({'mjpegServerPort': args.mjpeg})
 
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
         desired_caps.update({'showIOSLog': True})
 
-    if args.quicktime:
-        # create a shared event object
-        event: multiprocessing.Event = multiprocessing.Event()
-        # create a process
-        from mirroring import mirroring_quicktime
-        process = multiprocessing.Process(target=mirroring_quicktime,
-                                          args=(args.UDID.replace('-', ''), event, args.verbose))
-        # run the new process
-        process.start()
-        atexit.register(clean_up, process)
-        # wait for the event to be set
-        event.wait()
+    if not args.install_wda_only:
+        if args.quicktime:
+            # create a shared event object
+            event: multiprocessing.Event = multiprocessing.Event()
+            # create a process
+            from mirroring import mirroring_quicktime
+            process = multiprocessing.Process(target=mirroring_quicktime,
+                                              args=(args.UDID.replace('-', ''), event, args.verbose))
+            # run the new process
+            process.start()
+            atexit.register(clean_up, process)
+            # wait for the event to be set
+            event.wait()
 
     while True:
         try:
@@ -101,30 +111,31 @@ def main():
         except frida.ProcessNotFoundError:
             logger.warning('frida.get_device failed. Try again...')
 
-    # TODO: A more robust design using a SpringboardService.class.
-    #  More specifically a we need to use a Singleton:
-    #  https://refactoring.guru/design-patterns/singleton/python/example.
-    session: Session = device.attach('Springboard')
-    from anfora.anfora import springboard_ts
-    script: Script = session.create_script(source=springboard_ts)
-    script.load()
-    api: ScriptExportsSync = script.exports_sync
-    api.terminate_all_running_applications()
-    # maybe equals to t.connect_instruments().app_running_processes()?
-    api.turn_off_wifi()
-    api.turn_on_wifi()
-    if not api.get_wifi():
-        sys.exit('Turn on WiFi: FAILED!')
-    ssid: str
-    while True:
-        ssid = api.get_current_wifi_network()
-        if ssid is not None:
-            break
-        time.sleep(.1)
-    logger.info(f"iPhone is connected to {ssid}")
-    session.detach()
-    # TODO: check if iPhone and PC/macOS are on the same WiFi network.
-    #  Another solution: change communication protocol
+    if not args.install_wda_only:
+        # TODO: A more robust design using a SpringboardService.class.
+        #  More specifically a we need to use a Singleton:
+        #  https://refactoring.guru/design-patterns/singleton/python/example.
+        session: Session = device.attach('Springboard')
+        from anfora.anfora import springboard_ts
+        script: Script = session.create_script(source=springboard_ts)
+        script.load()
+        api: ScriptExportsSync = script.exports_sync
+        api.terminate_all_running_applications()
+        # maybe equals to t.connect_instruments().app_running_processes()?
+        api.turn_off_wifi()
+        api.turn_on_wifi()
+        if not api.get_wifi():
+            sys.exit('Turn on WiFi: FAILED!')
+        ssid: str
+        while True:
+            ssid = api.get_current_wifi_network()
+            if ssid is not None:
+                break
+            time.sleep(.1)
+        logger.info(f"iPhone is connected to {ssid}")
+        session.detach()
+        # TODO: check if iPhone and PC/macOS are on the same WiFi network.
+        #  Another solution: change communication protocol
 
     desired_caps.update({
         'udid': args.UDID,
@@ -143,8 +154,6 @@ def main():
     desired_caps.update({'platformVersion': lockdown.product_version})
 
     if args.team_id is not None:
-        if sys.platform != "darwin":
-            sys.exit(f'You can\'t compile WDA on {sys.platform}!')
         desired_caps.update({
             'xcodeOrgId': args.team_id,
             'allowProvisioningDeviceRegistration': True,
@@ -179,6 +188,9 @@ def main():
     from anfora.anfora import init_driver
     init_driver()
 
+    if args.install_wda_only:
+        exit(0)
+
     if args.mjpeg is not None:
         # With MJPEG server, I can't show terminateAllRunningApplications because WDA is a required app
         process = multiprocessing.Process(target=mirroring_mjpeg, args=(args.mjpeg, args.UDID,))
@@ -212,7 +224,7 @@ def main():
 
     try:
         from anfora import anfora
-        path = os.path.join(os.path.expanduser(args.DUMP_PATH),
+        path = os.path.join(os.path.expanduser(args.output),
                             f'{EXPERIMENT_NAME}_{date.today()}_{time.strftime("%H.%M.%S", time.localtime())}')
         os.makedirs(path)
         anfora.main(device, path, lockdown, args.UDID, args.password)
