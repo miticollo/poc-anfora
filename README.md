@@ -1,5 +1,8 @@
 # PoC AnForA
 
+_A tool for the Automated Forensic Analysis of iOS Applications. 
+In particular, AnForA automates most of the activities that need to be carried out to forensically analyze iOS applications, and that has been designed in such a way to yield various important properties, namely fidelity, artifact coverage, artifact precision, effectiveness, repeatability, and generality._
+
 ### Watch the demo
 
 <span><!-- https://stackoverflow.com/a/16079387 --></span>
