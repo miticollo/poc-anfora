@@ -186,10 +186,11 @@ def main():
     desired_caps.update({'mjpegServerPort': args.mjpeg})
 
     from anfora.anfora import init_driver
+    if args.install_wda_only:
+        atexit.register(lambda: device.kill(WDA_CF_BUNDLE_NAME))
     init_driver()
 
     if args.install_wda_only:
-        device.kill(WDA_CF_BUNDLE_NAME)
         exit(0)
 
     if args.mjpeg is not None:

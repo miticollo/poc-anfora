@@ -1,70 +1,94 @@
 # PoC AnForA
 
+<iframe width="560" height="315" src="https://www.youtube.com/embed/XQtXN6h2v_o" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
+Features:
+
 ## How to run
 
-If you don't have a macOS, you can follow [below instructions](#other-oss).
-When you have finished and your macOS container is ready, you can follow these steps to install WDA app.
-
-1. On iOS 16, real devices require enabling developer mode.
-   After plug the iPhone
-   run [`idevicedevmodectl`](https://github.com/libimobiledevice/libimobiledevice/blob/master/tools/idevicedevmodectl.c)
-   ```shell
-   idevicedevmodectl -d enable
-   idevicedevmodectl -d confirm
-   ```
-2. Clone this project
+1. Clone this project
    ```shell
    git clone --depth=1 -j8 https://github.com/miticollo/poc-anfora.git
    cd poc-anfora
    ```
-3. Download NodeJS dependencies
+2. Download NodeJS dependencies
    <span><!-- https://appium.github.io/appium/docs/en/latest/quickstart/install/ --></span>
    ```shell
    npm -ddd install
+   ```
+3. Install `pip` dependencies
+   ```shell
+   brew -v install cairo gobject-introspection
    ```
 4. Download Python dependencies
    <span><!-- https://stackoverflow.com/a/15593865 --></span>
    <span><!-- https://appium.github.io/appium/docs/en/latest/quickstart/test-py/ --></span>
    ```shell
-   pip -vvv install -r requirements.txt
+   pip -vvv install --upgrade -r requirements.txt
    ```
-5. Choose Xcode version
+5. Choose Xcode version **if you want to build WDA app, otherwise skip this step**
    <span><!-- https://appium.github.io/appium-xcuitest-driver/latest/multiple-xcode-versions/ --></span>
    ```shell
-   export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+   export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer # adjust path if necessary
    ```
-6. Run Appium server with increased log level
+6. Run Appium server
    <span><!-- https://stackoverflow.com/a/45164863 --></span>
    ```shell
-   npx appium server --log-level 'debug:error' --log-timestamp --local-timezone
+   npx appium server --session-override
    ```
 7. <span id="team-id"></span>
-   In another terminal window, execute the following Python script:
-   <span><!-- https://appium.github.io/appium/docs/en/2.0/quickstart/test-py/ --></span>
-   ```shell
-   python  ./test.py [-h] [-b BUNDLE_ID] [-t MINUTES] [--team-id TEAM_ID] [-p PORT] [-m] [-v] UDID IOS_VERSION
-   ```
-   To find `<UDID>`, you can use [`idevice_id -l`](https://github.com/libimobiledevice/libimobiledevice/blob/master/tools/idevice_id.c).
-   The procedure to retrieve your `<TEAM_ID>` depends on whether you are enrolled in the Apple Developer program or not. 
-   If you are enrolled in the program, you can follow [this guide](https://developer.apple.com/help/account/manage-your-team/locate-your-team-id/) to find your `<TEAM_ID>`.
-   However, if you have a free account, you must create a blank project with Xcode and then run `devteamid.sh` with the Apple ID that you used to create the previous project.
-   When you create a new project, Xcode downloads a provisioning file and generates an identity (certificate + private key).
-   <span><!-- https://www.ibm.com/docs/en/ibm-mq/9.3?topic=certificates-distinguished-names --></span>
-   The `Organizational Unit (OU)` attribute in this X.509 certificate is set to `<TEAM_ID>` and it is assigned to you by Apple. 
-   Remember that `<TEAM_ID>` is unique and immutable, so **save it for future uses**.
-   You can also find this certificate by exploring the Keychain app, in particular looking in `login.keychain`.
+   Open a new terminal window and choose appropriate options to properly run the PoC.
+   - If you have already installed the WDA app you can run the Python script without any particular options on **all supported OSs**:
+     ```shell
+     python ./src/main.py UDID -o DUMP_PATH
+     ```
+     To find `<UDID>`, you can use [`idevice_id -l`](https://github.com/libimobiledevice/libimobiledevice/blob/master/tools/idevice_id.c).
+   - If you have **not** already installed the WDA app and
+     - your OS is macOS
+       ```shell
+       python ./src/main.py UDID -o DUMP_PATH -b it.uniupo.dsdf.WebDriverAgentRunner --team-id <TEAM_ID>
+       ```
+        The procedure to retrieve your `<TEAM_ID>` depends on whether you are enrolled in the Apple Developer program or not.
+        If you are enrolled in the program, you can follow [this guide](https://developer.apple.com/help/account/manage-your-team/locate-your-team-id/) to find your `<TEAM_ID>`.
+        However, if you have a free account, you must create a blank project with Xcode and then run `utility/devteamid.sh` with the Apple ID that you used to create the previous project.
+        When you create a new project, Xcode downloads a provisioning file and generates an identity (certificate + private key).
+        <span><!-- https://www.ibm.com/docs/en/ibm-mq/9.3?topic=certificates-distinguished-names --></span>
+        The `Organizational Unit (OU)` attribute in this X.509 certificate is set to `<TEAM_ID>` and it is assigned to you by Apple.
+        Remember that `<TEAM_ID>` is unique and immutable, so **save it for future uses**.
+        You can also find this certificate by exploring the Keychain app, in particular looking in `login.keychain`.
+     - your OS is **not** macOS
+       1. Follow [below instructions](#other-oss) to prepare a Docker container with macOS.
+       2. Open Xcode
+          ```shell
+          open -a /Applications/Xcode.app # adjust path if necessary
+          ```
+       3. Add your Apple ID to Xcode.
+          Go to `Settings` > `Accounts`.
+       4. Create a blank project using the Apple ID you have just added to Xcode.
+          **This step is FUNDAMENTALLY because without it, you can't use `utility/devteamid.sh` because there is no identity in Keychain.**
+       5. Close Xcode.
+       6. [Pass through iPhone to container](https://github.com/sickcodes/Docker-OSX#usbfluxd-iphone-usb---network-style-passthrough-osx-kvm-docker-osx)
+       7. Unlock the `login.keychain`.
+          Add the following command before Appium server start command.
+          <span><!-- https://stackoverflow.com/a/20208104 --></span>
+          ```shell
+          security unlock-keychain -p PASSWORD login.keychain && npx appium server --session-override
+          ```
+          > **Warning**<br/>
+          > This is not SAFE!
+          > But it permits the building **over SSH** without GUI.
+       8. Finally run
+          ```shell
+           python ./src/main.py UDID -b it.uniupo.dsdf.WebDriverAgentRunner --team-id <TEAM_ID> --install-wda-only
+           ```
+          to (re)install the WDA app.
+          Find your `TEAM_ID` using `utility/devteamid.sh` with the Apple ID that you used for Xcode.
+       9. Shutdown the container.
+          Now you can use Linux or Windows!
 
-   > **Warning**<br/>
-   > If `appium` server fails with error: `Failed to register bundle identifier: The app identifier "it.uniupo.dsdf.WebDriverAgentRunner.xctrunner" cannot be registered to your development team because it is not available. Change your bundle identifier to a unique string to try again.`
-   > You can fix it with the option `[-b BUNDLE_ID]`.
-
-   > **Warning**<br/>
-   > During the initial installation, you may be prompted to enter your password due to `codesign` requiring access to the Keychain.
-   > To save time, it is recommended to select "Always Allow".
-
-## Tested Devices and iOS Versions
-
-- iPhone X: iOS 16.3.1
+     > **Note**<br/>
+     > If `appium` server fails with error: `Failed to register bundle identifier: The app identifier "it.uniupo.dsdf.WebDriverAgentRunner.xctrunner" cannot be registered to your development team because it is not available. Change your bundle identifier to a unique string to try again.`
+     > You can fix it with the option `[-b BUNDLE_ID]`.
 
 ## Other OSs
 
@@ -92,13 +116,13 @@ The information for the project that I linked before is extensive, so here are t
    Then, run the following command to establish an SSH connection:
    ```shell
    # adjust the values to match your environment
-   sshpass -p 'alpine' ssh -v user@localhost -p 50922
+   sshpass -p <password> ssh -v user@localhost -p 50922
    ```
    > **Warning**<br/>
    > <span><!-- https://github.com/sickcodes/Docker-OSX/issues/549#issuecomment-1298595576 --></span>
    > You need to enable remote login in the virtual macOS first.
 2. [Initial setup](https://github.com/sickcodes/Docker-OSX#initial-setup)
-3. Choose a macOS release. I chose [Monterey](https://github.com/sickcodes/Docker-OSX#monterey-).
+3. Choose a macOS release. I chose [Ventura](https://github.com/sickcodes/Docker-OSX#ventura-).
    To increase verbosity, you can pass the **global option** `-l` with the argument `debug` to `docker`.
    Pass the option `--name 'anfora_appium'` to correctly identify our container.
 4. In another terminal window start a TCP listener on port 3000 using `socat`, a more versatile and powerful networking tool than `nc`
@@ -184,10 +208,10 @@ These commands will be run inside container, so they are independently of host O
          pyenv init
          ```
          and follow instructions.
-      3. Install the current latest Python 3 version, in my case 3.11.3
+      3. Install the current latest Python 3 version, in my case 3.11.4
          ```shell
-         pyenv install -v 3.11.3
-         pyenv global 3.11.3
+         pyenv install -v 3.11.4
+         pyenv global 3.11.4
          ```
          To list all supported Python version you can run: `pyenv install -l`.
          This list can be updated every time that a `pyenv` update is available.
@@ -238,9 +262,3 @@ However, every [ping times out after 1 second (1000 ms)](https://github.com/appi
 > **Warning**<br/>
 > `xcodebuild` requires that the developer account used is in Xcode. 
 > Therefore, you must add it by going to `Preferences...` > `Accounts`.
-
-## Appium Inspector
-
-[Here](https://github.com/appium/appium-inspector/releases/tag/v2023.3.1) you can find the latest version.
-
-![inspector](screenshots/inspector.png?raw=true)
