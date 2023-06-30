@@ -1,6 +1,7 @@
 # PoC AnForA
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/XQtXN6h2v_o" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+<span><!-- https://stackoverflow.com/a/16079387 --></span>
+[![YouTube video demo](https://img.youtube.com/vi/XQtXN6h2v_o/maxresdefault.jpg)](https://www.youtube.com/watch?v=XQtXN6h2v_o)
 
 Features:
 
@@ -29,7 +30,7 @@ Features:
 5. Choose Xcode version **if you want to build WDA app, otherwise skip this step**
    <span><!-- https://appium.github.io/appium-xcuitest-driver/latest/multiple-xcode-versions/ --></span>
    ```shell
-   export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer # adjust path if necessary
+   export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer # Adjust path if necessary
    ```
 6. Run Appium server
    <span><!-- https://stackoverflow.com/a/45164863 --></span>
@@ -60,23 +61,23 @@ Features:
        1. Follow [below instructions](#other-oss) to prepare a Docker container with macOS.
        2. Open Xcode
           ```shell
-          open -a /Applications/Xcode.app # adjust path if necessary
+          open -a /Applications/Xcode.app # Adjust path if necessary
           ```
        3. Add your Apple ID to Xcode.
           Go to `Settings` > `Accounts`.
        4. Create a blank project using the Apple ID you have just added to Xcode.
-          **This step is FUNDAMENTALLY because without it, you can't use `utility/devteamid.sh` because there is no identity in Keychain.**
+          > **Note**<br/>
+          > This step is FUNDAMENTALLY because without it, you can't use `utility/devteamid.sh` given that there is no identity in Keychain.
        5. Close Xcode.
        6. [Pass through iPhone to container](https://github.com/sickcodes/Docker-OSX#usbfluxd-iphone-usb---network-style-passthrough-osx-kvm-docker-osx)
        7. Unlock the `login.keychain`.
           Add the following command before Appium server start command.
           <span><!-- https://stackoverflow.com/a/20208104 --></span>
           ```shell
-          security unlock-keychain -p PASSWORD login.keychain && npx appium server --session-override
+          security -v unlock-keychain -p PASSWORD login.keychain && npx appium server --session-override
           ```
           > **Warning**<br/>
-          > This is not SAFE!
-          > But it permits the building **over SSH** without GUI.
+          > This permits the build **over SSH** without GUI.
        8. Finally run
           ```shell
            python ./src/main.py UDID -b it.uniupo.dsdf.WebDriverAgentRunner --team-id <TEAM_ID> --install-wda-only
@@ -257,8 +258,3 @@ However, every [ping times out after 1 second (1000 ms)](https://github.com/appi
 
 #### How to Integrate Docker Container into AnForA Workflow?
 
-
-
-> **Warning**<br/>
-> `xcodebuild` requires that the developer account used is in Xcode. 
-> Therefore, you must add it by going to `Preferences...` > `Accounts`.
