@@ -10,7 +10,15 @@ In particular, AnForA automates most of the activities that need to be carried o
 
 ### Features
 
-
+- Installing and uninstalling apps
+- Changing location
+- Dumping files and their metadata before and after each sub-experiment over SSH
+- Generating `pcap` files for each sub-experiment
+- Attaching to all user-spawned processes
+- Detecting all paths (Data and AppGroup containers)
+- Using Appium for UI automation
+- Partially reverting sub-experiment writings on the file system
+- Partially handling third-party writings (e.g., application permissions)
 
 ## How to run
 
@@ -251,12 +259,12 @@ These commands will be run inside container, so they are independently of host O
 
 #### Capability: `wdaLaunchTimeout`
 
-I had to add this capability, which was [introduced in 2016](https://github.com/appium/appium-xcuitest-driver/pull/327#issue-196499064), otherwise `test.py` would have failed inside the container. 
+I had to add this capability, which was [introduced in 2016](https://github.com/appium/appium-xcuitest-driver/pull/327#issue-196499064); otherwise PoC would have failed inside the container during WDA installation. 
 This is because macOS has fewer resources, which causes `xcodebuild` to take longer to finish. 
 During compilation, the `appium` server continuously pings WDA, but it only sends a response when it is installed and running on iOS. 
 If the `wdaLaunchTimeout` (which has a default value of 60000 ms or 1 minute) expires before the app starts up on iOS, [the `appium` server tries to start a session anyway](https://github.com/appium/WebDriverAgent/blob/209d01a680003fd4864061487b1c3a4e0b76b2db/lib/xcodebuild.js#L399-L402), even if it's unsuccessful.
 To avoid this, WebDriverAgent has a capability to change this timeout. 
-I increased this value to 3 minutes, but if this is not sufficient, you can increase it using the third optional positional argument of `test.py`.
+I increased this value to 3 minutes, but if this is not sufficient, you can increase it using the short option `-t` of `src/main.py`.
 
 <span><!-- https://github.com/jlipps/asyncbox/blob/d0adc2145673c66c1b64c83739dfcaef4f59d3e1/lib/asyncbox.js#L79-L106 --></span>
 In particular, when using the iOS driver, Appium [tries to connect once every 0.5 seconds (500 ms), until `wdaLaunchTimeout` is up](https://github.com/appium/WebDriverAgent/blob/209d01a680003fd4864061487b1c3a4e0b76b2db/lib/xcodebuild.js#L366).
@@ -265,3 +273,10 @@ However, every [ping times out after 1 second (1000 ms)](https://github.com/appi
 
 #### How to Integrate Docker Container into AnForA Workflow?
 
+A possible solution is to plan two different ways to integrate the Docker container:
+1. **Manual mode**: The user pulls the Docker container and installs the WDA app using the long option `--install-wda-only`.
+2. **Automatic mode**: The tool pulls the Docker container for the user and installs the WDA app using SSH. 
+   This option requires the AnForA team to create a customized container of the Docker-OSX project. 
+   The user will need to provide their Apple ID and password for Xcode installation.
+
+The main difference between these two approaches is that the first one can be done at any time, unlike the second one.
