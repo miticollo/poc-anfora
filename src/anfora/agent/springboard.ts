@@ -94,7 +94,7 @@ rpc.exports = {
         } else CLLocationManager.setAuthorizationStatusByType_forBundleIdentifier_(0, bundleIdentifier)
     },
     resetNotificationPermissionsByBundleId(bundleIdentifier: string): void {
-        // TODO: add support for iOS 12
+        // TODO: add support for iOS 12 & 13
         ObjC.chooseSync(BBDataProviderConnection)[0].removeDataProviderWithSectionID_(bundleIdentifier);
     },
     resetAllAppLocationPermission(): void {
@@ -104,7 +104,7 @@ rpc.exports = {
         TCCAccessReset(kTCCServiceAll);
     },
     resetAllAppNotificationPermissions(): void {
-        // TODO: add support for iOS 12
+        // TODO: add support for iOS 12 & 13
         const dict = ObjC.chooseSync(BBServer)[0].$ivars['_sectionInfoByID'];
         const bbDataProviderConnection = ObjC.chooseSync(BBDataProviderConnection)[0];
         const bundleIdentifiers = dict.allKeys();
