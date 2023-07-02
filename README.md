@@ -26,7 +26,7 @@ In particular, AnForA automates most of the activities that need to be carried o
 
 This means that IT DOESN'T WORK on other iDevices.
 Because Appium sometimes taps the screen using coordinates.
-[They are hardcoded](./src/anfora/sub_experiments.py#L34-L46) to adapt this PoC to your iPhone you can change these coordinates.
+[They are hardcoded](./src/anfora/sub_experiments.py#L34-L46) to adjust this PoC to your iPhone you can change these coordinates.
 
 ## How to run
 
