@@ -1,3 +1,6 @@
+/*
+ * Based on https://www.raywenderlich.com/2547730-contacts-framework-tutorial-for-ios
+ */
 export function hookContact(): void {
     const processInformationAgent = ObjC.classes.NSProcessInfo.processInfo();        // this is a shared object between processes
     const majorVersion: number = parseInt(processInformationAgent.operatingSystemVersion()[0]);

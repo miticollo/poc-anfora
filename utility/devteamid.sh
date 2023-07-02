@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 #
 # Retrieve your DEVELOPMENT_TEAM from certs.
+#
+# Based on https://gist.github.com/luckman212/ec52e9291f27bc39c2eecee07e7a9aa7
 
 function err() {
   echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')]: $*" >&2
