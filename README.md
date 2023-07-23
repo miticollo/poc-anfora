@@ -28,6 +28,8 @@ In particular, AnForA automates most of the activities that need to be carried o
 
 - [ ] Add an option (like `--test`) to test the generated (or written) action file without dumping, sniffing, or hooking, only performing FS revert.
 
+- [ ] Get paths dynamically
+
 - [ ] Remove all `TODO`
 
 ### Supported devices
