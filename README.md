@@ -20,6 +20,14 @@ In particular, AnForA automates most of the activities that need to be carried o
 - Partially reverting sub-experiment writings on the file system
 - Partially handling third-party writings (e.g., application permissions)
 
+### TODO
+
+- [ ] **A**dvance **A**ction **F**ile **G**enerator (AAFG)
+      An interactive GUI that mirrors the iPhone screen. 
+      During user interaction, it generates the action file with appropriate sleep times or `if` statements.
+
+- [x] Remove all `TODO`
+
 ### Supported devices
 
 :warning: **This PoC is designed for iPhone X with iOS 16.3.1.**
