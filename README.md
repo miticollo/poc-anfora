@@ -22,11 +22,13 @@ In particular, AnForA automates most of the activities that need to be carried o
 
 ### TODO
 
-- [ ] **A**dvance **A**ction **F**ile **G**enerator (AAFG)
+- [ ] **A**dvance **A**ction **F**ile **G**enerator (AAFG)<br/>
       An interactive GUI that mirrors the iPhone screen. 
       During user interaction, it generates the action file with appropriate sleep times or `if` statements.
 
-- [x] Remove all `TODO`
+- [ ] Add an option (like `--test`) to test the generated (or written) action file
+
+- [ ] Remove all `TODO`
 
 ### Supported devices
 
