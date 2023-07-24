@@ -24,7 +24,7 @@ In particular, AnForA automates most of the activities that need to be carried o
 
 - [ ] **A**dvance **A**ction **F**ile **G**enerator (AAFG)<br/>
       An interactive GUI that mirrors the iPhone screen. 
-      During user interaction, it generates the action file with appropriate sleep times or `if` statements.
+      During user interaction, it generates the action file with appropriate sleep times, `if` statements and functions.
 
 - [ ] Add an option (like `--test`) to test the generated (or written) action file without dumping, sniffing, or hooking, only performing FS revert.
 
