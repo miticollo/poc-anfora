@@ -271,7 +271,7 @@ def init_driver():
     # Anyway, this version is not suitable for iOS 12 and 13.
     # As reported here: https://stackoverflow.com/q/76156478
 
-    # Furthermore, iOS 14 is supported up to the version 4.30.9 of appium-xcuitest-driver.
+    # Furthermore, iOS 12, 13 & 14 are supported up to the version 4.30.9 of appium-xcuitest-driver.
     # Starting from version 4.31.0, the driver depends on version 5.4.0 of WebDriverAgent.
     # This version drops older screenshotting APIs, breaking backward compatibility with iOS <= 14 (see also
     # https://github.com/appium/WebDriverAgent/pull/721/files#r1222509149).
