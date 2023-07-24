@@ -270,6 +270,15 @@ def init_driver():
     # To install the WDA app on iOS 16.4+ Xcode 14.3+ is required.
     # Anyway, this version is not suitable for iOS 12 and 13.
     # As reported here: https://stackoverflow.com/q/76156478
+
+    # Furthermore, iOS 14 is supported up to the version 4.30.9 of appium-xcuitest-driver.
+    # Starting from version 4.31.0, the driver depends on version 5.4.0 of WebDriverAgent.
+    # This version drops older screenshotting APIs, breaking backward compatibility with iOS <= 14 (see also
+    # https://github.com/appium/WebDriverAgent/pull/721/files#r1222509149).
+    # I tried to use the latest version of appium-xcuitest-driver with an older appium-webdriveragent, but it doesn't work.
+    # It seems that appium-xcuitest-driver "forces" the use of its version of WDA app.
+
+    # To install the WDA app on iOS 14, you can use Xcode up to version 14.x.y.
     global driver
     driver = webdriver.Remote(SERVER_URL_BASE, desired_capabilities=desired_caps)
     atexit.register(lambda: driver.quit() if driver else None)

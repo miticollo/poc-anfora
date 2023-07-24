@@ -145,7 +145,7 @@ rpc.exports = {
         });
         pendingBlocks.add(completionHandler);
 
-        // TODO: iOS 14+ support this permission. So should we add a `if`?
+        // TODO: iOS 14+ support this permission. So should we add an `if`?
         manager.repopulateNetworkPrivacyConfigurationResetAll_(true);
         manager.loadConfigurationsWithCompletionQueue_handler_(ObjC.mainQueue, completionHandler);
     },
