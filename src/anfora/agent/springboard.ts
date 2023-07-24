@@ -105,7 +105,15 @@ rpc.exports = {
     },
     resetAllAppNotificationPermissions(): void {
         // TODO: add support for iOS 12 & 13
-        const dict = ObjC.chooseSync(BBServer)[0].$ivars['_sectionInfoByID'];
+        const processInformationAgent = NSProcessInfo.processInfo();        // this is a shared object between processes
+        const majorVersion: number = parseInt(processInformationAgent.operatingSystemVersion()[0]);
+        let dict;
+        if (majorVersion >= 17) {
+            // On iOS 17, the BBServer's field "sectionInfoByID" is null.
+            // However, on iOS versions <= 16, there is no field called "sectionInfoStore."
+            // Therefore, Apple introduced a new class on iOS 17: BBSectionInfoStore.
+            dict = ObjC.chooseSync(BBServer)[0].$ivars['_sectionInfoStore'].sectionInfoByID()
+        } else dict = ObjC.chooseSync(BBServer)[0].$ivars['_sectionInfoByID'];
         const bbDataProviderConnection = ObjC.chooseSync(BBDataProviderConnection)[0];
         const bundleIdentifiers = dict.allKeys();
         const count = bundleIdentifiers.count().valueOf();

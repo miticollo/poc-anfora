@@ -17,6 +17,16 @@ def _spawn_by_pymobiledevice(lockdown, bundle_id: str) -> int:
 
 def new_contact_on_telegram(device: Device, lockdown, driver: WebDriver, bundle_id: str):
     """Create a new contact using Telegram UI."""
+
+    def add_contact():
+        element = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'label == "Aggiungi contatto"')
+        if element is not None:  # Not supported by action parser
+            # For older Telegram version
+            element.click()
+        else:
+            # TODO: add an if to support more devices
+            driver.tap([(348, 71)], 500)
+
     spawned_pid = _spawn_by_pymobiledevice(lockdown, bundle_id)
     atexit.register(lambda: device.kill(spawned_pid))
     try:
@@ -25,11 +35,11 @@ def new_contact_on_telegram(device: Device, lockdown, driver: WebDriver, bundle_
             # Telegram has just installed!
             el.click()
         wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Contatti"').click()
-        wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Aggiungi contatto"').click()
+        add_contact()
         el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'label == "OK"')
         if el is not None: # Not supported by action parser
             el.click()
-            wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "Aggiungi contatto"').click()
+            add_contact()
         # TODO: add an if to support more devices
         driver.tap([(177, 248)], 500)  # focus
         from selenium.webdriver.common.action_chains import ActionChains
@@ -120,8 +130,12 @@ def chain_of_apps(device: Device, lockdown, driver: WebDriver, bundle_id: str):
         wait_for_element(driver, AppiumBy.IOS_CLASS_CHAIN,
                          '**/XCUIElementTypeTable[`name == "OKM_CHATS_TABLE"`]/XCUIElementTypeCell[1]').click()
         time.sleep(2)
-        el = wait_for_element(driver, AppiumBy.IOS_PREDICATE, 'label == "chat attach"')
-        el.click()
+        el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'label == "chat attach"')
+        if el is not None:  # Not supported by action parser
+            # For older TamTam version
+            el.click()
+        else:
+            driver.find_element(by=AppiumBy.IOS_PREDICATE, value='label == "MSG_ACCESSIBILITY_CHAT_BTN_ATTACH"').click()
         el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'label == "Consenti l\'accesso a tutte le foto"')
         if el is not None: # Not supported by action parser
             el.click()
@@ -135,10 +149,19 @@ def chain_of_apps(device: Device, lockdown, driver: WebDriver, bundle_id: str):
             el.click()
         time.sleep(5)
         driver.find_element(by=AppiumBy.IOS_PREDICATE, value='label == "Invia posizione"').click()
-        el = driver.find_element(by=AppiumBy.IOS_PREDICATE, value='name == "input_textview"')
-        el.click()
+        el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'name == "input_textview"')
+        if el is not None:  # Not supported by action parser
+            # For older TamTam version
+            el.click()
+        else:
+            el = driver.find_element(by=AppiumBy.IOS_PREDICATE, value='label == "Testo messaggio"')
         el.send_keys('Hey! 👋 Do you know momentoph.com?')
-        driver.find_element(by=AppiumBy.IOS_PREDICATE, value='label == "ic send 24"').click()
+        el = wait_for_element_or_none(driver, AppiumBy.IOS_PREDICATE, 'label == "ic send 24"')
+        if el is not None:  # Not supported by action parser
+            # For older TamTam version
+            el.click()
+        else:
+            driver.find_element(by=AppiumBy.IOS_PREDICATE, value='label == "MSG_ACCESSIBILITY_CHAT_BTN_SEND"').click()
         time.sleep(2)
         wait_for_element(driver, AppiumBy.IOS_CLASS_CHAIN,
                          '**/XCUIElementTypeOther[`label == "Hey! 👋 Do you know momentoph.com?"`][1]').click()
