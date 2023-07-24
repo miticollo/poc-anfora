@@ -159,6 +159,12 @@ def main():
         session.detach()
         # TODO: check if iPhone and PC/macOS are on the same WiFi network.
         #  Another solution: change communication protocol
+    else:
+        from urllib import request
+        try:
+            request.urlopen('https://www.apple.com', timeout=1)
+        except Exception:
+            sys.exit('To compile WDA app an Internet connection is required!')
 
     desired_caps.update({
         'udid': args.UDID,
