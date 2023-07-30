@@ -37,7 +37,7 @@
     "frida-compile": "^16.1.8"
   },
   "config": {
-    "XCODE_LATEST": "/Applications/Xcode-15.0.0-Beta.4.app/Contents/Developer",
+    "XCODE_LATEST": "/Applications/Xcode-15.0.0-Beta.5.app/Contents/Developer",
     "XCODE_14_2": "/Applications/Xcode-14.2.0.app/Contents/Developer"
   }
 }
