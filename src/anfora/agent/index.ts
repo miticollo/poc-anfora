@@ -5,3 +5,5 @@ hookContact();
 hookKeychain();
 // TODO: SSL unpinning
 // TODO: DB password sniffing
+// TODO: JB bypass
+// TODO: Frida bypass
