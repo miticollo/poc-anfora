@@ -1,16 +1,20 @@
-declare let Swift: any;
-/*
- * Frida 16.1.5 introduces a brand new ApiResolver for Swift:
- * https://frida.re/news/2023/11/04/frida-16-1-5-released/#swift
- *
- * Demangling no more required!
- */
-const r = new ApiResolver('swift');
+let resolver: ApiResolver | null = null;
+try {
+    resolver = new ApiResolver("swift" as ApiResolverType);
+} catch (e: any) {
+    throw new Error("Swift runtime is not available");
+}
 
-if (Swift.available) {
+if (resolver !== null) {
     // Tested on iOS 16.3.1
 
-    const listener = Interceptor.attach(r.enumerateMatches('functions:*GRDB*!*usePassphrase(Foundation.Data)*')[0].address, {
+    /*
+     * Frida 16.1.5 introduces a brand new ApiResolver for Swift:
+     * https://frida.re/news/2023/11/04/frida-16-1-5-released/#swift
+     *
+     * Demangling no more required!
+     */
+    const listener = Interceptor.attach(resolver.enumerateMatches('functions:*GRDB*!*usePassphrase(Foundation.Data)*')[0].address, {
         /**
          * @see https://github.com/neil-wu/FridaHookSwiftAlamofire/blob/master/frida-agent/agent/SDSwiftDataStorage.ts
          */
