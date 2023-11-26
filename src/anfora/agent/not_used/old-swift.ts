@@ -1,16 +1,17 @@
-declare let Swift: any;
 /*
- * Frida 16.1.5 introduces a brand new ApiResolver for Swift:
- * https://frida.re/news/2023/11/04/frida-16-1-5-released/#swift
- *
- * Demangling no more required!
+ * Find the path of the framework into target app
  */
-const r = new ApiResolver('swift');
+const GRDB_PATH: string = Process.enumerateModules().find((x: Module): boolean => x.name === "GRDB")!.path;
+
+declare let Swift: any;
 
 if (Swift.available) {
-    // Tested on iOS 16.3.1
+    // Tested on iOS 14.4.2, iOS 15.1b1, iPadOS 17.0b4 and iOS 16.3.1.
+    const mangled: string = "$s4GRDB8DatabaseC13usePassphraseyy10Foundation4DataVKF";
+    const demangled: NativePointer = Swift.api.swift_demangle(Memory.allocUtf8String(mangled), mangled.length, NULL, NULL, 0);
+    console.log(`Function hooked: ${demangled.readUtf8String()}`);
 
-    const listener = Interceptor.attach(r.enumerateMatches('functions:*GRDB*!*usePassphrase(Foundation.Data)*')[0].address, {
+    const listener = Interceptor.attach(Module.getExportByName(GRDB_PATH, mangled), {
         /**
          * @see https://github.com/neil-wu/FridaHookSwiftAlamofire/blob/master/frida-agent/agent/SDSwiftDataStorage.ts
          */
