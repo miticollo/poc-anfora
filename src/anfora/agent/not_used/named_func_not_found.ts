@@ -4,6 +4,7 @@
  * function doesn't have an export name.
  *
  * There is only one drawback: the performance. The first time you use DebugSymbol.getFunctionByName is a bit slow.
+ * To improve lookup, look here: https://t.me/fridadotre/135901
  */
 
 Interceptor.attach(DebugSymbol.getFunctionByName('TCCResetInternalWithConnection'), {
